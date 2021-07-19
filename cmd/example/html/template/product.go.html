@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="en" xml:lang="en" xmlns="http://www.w3.org/1999/xhtml">
+    <meta charset="UTF-8"/>
+    <meta http-equiv="Content-Language" content="en"/>
+    <head>
+        <link rel="stylesheet" href="/static/styles.css"/>
+        <meta charset="utf-8">
+        <title>Example Product</title>
+    </head>
+    <body>
+        {{if not .Product}}
+        <p>Product not found</p>
+        {{else}}
+        <h1>{{.Product.Name}}</h1>
+        <table class="center">
+            <tr>
+                <th class="leftcolumn">ID</th>
+                <td class="rightcolumn">{{.Product.ID}}</td>
+            </tr>
+            <tr>
+                <th class="leftcolumn">Name</th>
+                <td class="rightcolumn">{{.Product.Name}}</td>
+            </tr>
+        </table>
+        {{end}}
+    </body>
+</html>

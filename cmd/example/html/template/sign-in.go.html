@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en" xml:lang="en" xmlns="http://www.w3.org/1999/xhtml">
+    <meta charset="UTF-8"/>
+    <meta http-equiv="Content-Language" content="en"/>
+    <head>
+        <link rel="stylesheet" href="/static/styles.css"/>
+        <meta charset="utf-8">
+        <title>Example</title>
+    </head>
+    <body>
+        <h1>Sign In</h1>
+
+        {{if ne .Error ""}}
+            <p class="error">{{.Error}}</p>
+        {{end}}
+
+        <form action="/sign-in" method="post" id="sign-in-form">
+            <!-- TODO(v2) add CSRF token
+            <input type="hidden" id="token" name="token" value="{ { .Token } }" />
+            -->
+            <table class="center">
+                <tr>
+                    <td class="leftcolumn">
+                        <label for="username">Username</label>
+                    </td>
+                    <td class="rightcolumn">
+                        <input type="text" id="username" name="username" autocomplete="username" />
+                    </td>
+                </tr>
+                <tr>
+                    <td class="leftcolumn">
+                        <label for="password">Password</label>
+                    </td>
+                    <td class="rightcolumn">
+                        <input type="password" id="password" name="password" autocomplete="password" />
+                    </td>
+                </tr>
+                <tr>
+                    <td colspan="2" style="text-align:center;">
+                        <input type="submit" value="Sign In" />
+                    </td>
+                </tr>
+            </table>
+        </form>
+    </body>
+</html>

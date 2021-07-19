@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="en" xml:lang="en" xmlns="http://www.w3.org/1999/xhtml">
+    <meta charset="UTF-8"/>
+    <meta http-equiv="Content-Language" content="en"/>
+    <head>
+        <link rel="stylesheet" href="/static/styles.css"/>
+        <meta charset="utf-8">
+        <title>Example Products</title>
+    </head>
+    <body>
+        <h1>Products</h1>
+        <table class="center">
+            <tr>
+                <th class="leftcolumn">ID</th>
+                <th class="rightcolumn">Name</th>
+            </tr>
+            {{range .Products}}
+            <tr>
+                <td class="leftcolumn">
+                    {{.ID}}
+                </td>
+                <td class="rightcolumn">
+                    <a href="/product?id={{.ID}}">{{.Name}}</a>
+                </td>
+            </tr>
+            {{end}}
+        </table>
+    </body>
+</html>

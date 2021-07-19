@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en" xml:lang="en" xmlns="http://www.w3.org/1999/xhtml">
+    <meta charset="UTF-8"/>
+    <meta http-equiv="Content-Language" content="en"/>
+    <head>
+        <link rel="stylesheet" href="/static/styles.css"/>
+        <meta charset="utf-8">
+        <title>Example</title>
+    </head>
+    <body>
+        <h1>Sign Up</h1>
+
+        {{if ne .Error ""}}
+            <p class="error">{{.Error}}</p>
+        {{end}}
+
+        <form action="/sign-up" method="post" id="sign-up-form">
+            <!-- TODO(v2) add CSRF token
+            <input type="hidden" id="token" name="token" value="{ { .Token } }" />
+            -->
+            <table class="center">
+                <tr>
+                    <td class="leftcolumn">
+                        <label for="email">Email</label>
+                    </td>
+                    <td class="rightcolumn">
+                        <input type="text" id="email" name="email" value="{{.Email}}" autocomplete="email" />
+                    </td>
+                </tr>
+                <tr>
+                    <td class="leftcolumn">
+                        <label for="username">Username</label>
+                    </td>
+                    <td class="rightcolumn">
+                        <input type="text" id="username" name="username" value="{{.Username}}" autocomplete="username" />
+                    </td>
+                </tr>
+                <tr>
+                    <td class="leftcolumn">
+                        <label for="password">Password</label>
+                    </td>
+                    <td class="rightcolumn">
+                        <input type="password" id="password" name="password" autocomplete="new-password" />
+                    </td>
+                </tr>
+                <tr>
+                    <td class="leftcolumn">
+                        <label for="confirmation">Confirm Password</label>
+                    </td>
+                    <td class="rightcolumn">
+                        <input type="password" id="confirmation" name="confirmation" autocomplete="new-password" />
+                    </td>
+                </tr>
+                <tr>
+                    <td class="leftcolumn">
+                        <a href="/static/terms-of-service.html">Terms of Service</a>
+                    </td>
+                    <td class="rightcolumn">
+                        <a href="/static/privacy-policy.html">Privacy Policy</a>
+                    </td>
+                </tr>
+                <tr>
+                    <td colspan="2" style="text-align:center;">
+                        <input type="submit" value="Sign Up" />
+                    </td>
+                </tr>
+            </table>
+        </form>
+    </body>
+</html>
