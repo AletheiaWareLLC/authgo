@@ -14,7 +14,7 @@
             <p class="error">{{.Error}}</p>
         {{end}}
 
-        <p>{{.Account.Username}} are you sure you want to sign out?</p>
+        <p style="text-align: center;">{{.Account.Username}} are you sure you want to sign out?</p>
 
         <form action="/sign-out" method="post" id="sign-out-form">
             <!-- TODO(v2) add CSRF token
