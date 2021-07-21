@@ -10,6 +10,7 @@ var (
 	ErrIncorrectCredentials      = errors.New("Incorrect Credentials")
 	ErrEmailAlreadyRegistered    = errors.New("Email Already Registered")
 	ErrUsernameAlreadyRegistered = errors.New("Username Already Registered")
+	ErrEmailNotRegistered        = errors.New("Email Not Registered")
 )
 
 type Account struct {
@@ -21,6 +22,8 @@ type AccountManager interface {
 	New(string, string, []byte) (*Account, error)
 	Lookup(string) (*Account, error)
 	Authenticate(string, []byte) (*Account, error)
+	Username(string) (string, error)
+	ChangePassword(string, []byte) error
 	IsEmailVerified(string) bool
 	SetEmailVerified(string, bool) error
 }
@@ -87,6 +90,23 @@ func (m *inMemoryAccountManager) Authenticate(username string, password []byte) 
 		return nil, ErrIncorrectCredentials
 	}
 	return acc, nil
+}
+
+func (m *inMemoryAccountManager) Username(email string) (string, error) {
+	username, ok := m.usernames[email]
+	if !ok {
+		return "", ErrEmailNotRegistered
+	}
+	return username, nil
+}
+
+func (m *inMemoryAccountManager) ChangePassword(username string, password []byte) error {
+	h, err := GeneratePasswordHash(password)
+	if err != nil {
+		return err
+	}
+	m.passwords[username] = h
+	return nil
 }
 
 func (m *inMemoryAccountManager) IsEmailVerified(email string) bool {

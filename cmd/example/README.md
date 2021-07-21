@@ -7,6 +7,8 @@ This example demonstates how to use authgo to implement a website with authentic
 
 - / - This is the home page.
 - /account - Customer account page.
+- /account-password - Allows a registered customer to change their password.
+- /account-recovery - Allows a registered customer to recover their account.
 - /sign-in - Allows registered customer to sign in.
 - /sign-out - Allows signed in customers to sign out.
 - /sign-up - Provides a form for new customers to register and create an account by providing their email address, and selecting a username and password.

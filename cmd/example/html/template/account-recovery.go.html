@@ -8,43 +8,36 @@
         <title>Example</title>
     </head>
     <body>
-        <h1>Sign In</h1>
+        <h1>Account Recovery</h1>
 
         {{if ne .Error ""}}
             <p class="error">{{.Error}}</p>
         {{end}}
 
-        <form action="/sign-in" method="post" id="sign-in-form">
+        <p>Enter the email address associated with your account.</p>
+
+        <form action="/account-recovery" method="post" id="account-recovery-form">
             <!-- TODO(v2) add CSRF token
             <input type="hidden" id="token" name="token" value="{ { .Token } }" />
             -->
             <table class="center">
                 <tr>
                     <td class="leftcolumn">
-                        <label for="username">Username</label>
+                        <label for="email">Email</label>
                     </td>
                     <td class="rightcolumn">
-                        <input type="text" id="username" name="username" value="{{.Username}}" autocomplete="username" />
-                    </td>
-                </tr>
-                <tr>
-                    <td class="leftcolumn">
-                        <label for="password">Password</label>
-                    </td>
-                    <td class="rightcolumn">
-                        <input type="password" id="password" name="password" autocomplete="password" />
+                        <input type="text" id="email" name="email" value="{{.Email}}" autocomplete="email" />
                     </td>
                 </tr>
                 <tr>
                     <td colspan="2" style="text-align:center;">
-                        <input type="submit" value="Sign In" />
+                        <input type="submit" value="Recover Account" />
                     </td>
                 </tr>
                 <tr>
                     <td colspan="2" style="text-align:center;">
                         or<br />
-                        <a href="account-recovery">Account Recovery</a><br />
-                        <a href="sign-up">Sign Up</a>
+                        <a href="sign-in">Sign In</a>
                     </td>
                 </tr>
             </table>

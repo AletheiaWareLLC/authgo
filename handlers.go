@@ -10,6 +10,9 @@ import (
 
 func AttachHandlers(a Authenticator, m *http.ServeMux, ts *template.Template) {
 	m.Handle("/account", netgo.LoggingHandler(AccountHandler(a, ts)))
+	m.Handle("/account-password", netgo.LoggingHandler(AccountPasswordHandler(a, ts)))
+	m.Handle("/account-recovery", netgo.LoggingHandler(AccountRecoveryHandler(a, ts)))
+	m.Handle("/account-recovery-verification", netgo.LoggingHandler(AccountRecoveryVerificationHandler(a, ts)))
 	m.Handle("/sign-in", netgo.LoggingHandler(SignInHandler(a, ts)))
 	m.Handle("/sign-out", netgo.LoggingHandler(SignOutHandler(a, ts)))
 	m.Handle("/sign-up", netgo.LoggingHandler(SignUpHandler(a, ts)))
@@ -31,6 +34,217 @@ func AccountHandler(a Authenticator, ts *template.Template) http.Handler {
 		if err := ts.ExecuteTemplate(w, "account.go.html", data); err != nil {
 			log.Println(err)
 			return
+		}
+	})
+}
+
+func AccountPasswordHandler(a Authenticator, ts *template.Template) http.Handler {
+	am := a.AccountManager()
+	sm := a.SessionManager()
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		account := a.CurrentAccount(w, r)
+		if account == nil {
+			RedirectSignIn(w, r)
+			return
+		}
+		token, errmsg := CurrentAccountPassword(sm, r)
+		// log.Println("CurrentAccountPassword", token, errmsg)
+		switch r.Method {
+		case "GET":
+			if token == "" {
+				t, err := sm.NewAccountPassword()
+				// log.Println("NewAccountPassword", t, err)
+				if err != nil {
+					log.Println(err)
+					http.Error(w, http.StatusText(http.StatusNotFound), http.StatusNotFound)
+					return
+				}
+				token = t
+				http.SetCookie(w, NewAccountPasswordCookie(token))
+			}
+			data := struct {
+				Error string
+			}{
+				Error: errmsg,
+			}
+			if err := ts.ExecuteTemplate(w, "account-password.go.html", data); err != nil {
+				log.Println(err)
+				return
+			}
+		case "POST":
+			if token == "" {
+				RedirectAccountPassword(w, r)
+				return
+			}
+			sm.SetAccountPasswordError(token, "")
+
+			password := []byte(strings.TrimSpace(r.FormValue("password")))
+			confirmation := []byte(strings.TrimSpace(r.FormValue("confirmation")))
+
+			// Check valid password and matching confirm
+			if err := ValidatePassword(password); err != nil {
+				log.Println(err)
+				sm.SetAccountPasswordError(token, err.Error())
+				RedirectAccountPassword(w, r)
+				return
+			}
+			if err := MatchPasswords(password, confirmation); err != nil {
+				log.Println(err)
+				sm.SetAccountPasswordError(token, err.Error())
+				RedirectAccountPassword(w, r)
+				return
+			}
+
+			if err := am.ChangePassword(account.Username, password); err != nil {
+				log.Println(err)
+				sm.SetAccountPasswordError(token, err.Error())
+				RedirectAccountPassword(w, r)
+				return
+			}
+
+			RedirectAccount(w, r)
+		}
+	})
+}
+
+func AccountRecoveryHandler(a Authenticator, ts *template.Template) http.Handler {
+	am := a.AccountManager()
+	sm := a.SessionManager()
+	ev := a.EmailVerifier()
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if a := a.CurrentAccount(w, r); a != nil {
+			// Already signed in
+			RedirectAccount(w, r)
+			return
+		}
+		token, email, _, _, errmsg := CurrentAccountRecovery(sm, r)
+		// log.Println("CurrentAccountRecovery", token, email, username, challenge, errmsg)
+		switch r.Method {
+		case "GET":
+			if token == "" {
+				t, err := sm.NewAccountRecovery()
+				// log.Println("NewAccountRecovery", t, err)
+				if err != nil {
+					log.Println(err)
+					http.Error(w, http.StatusText(http.StatusNotFound), http.StatusNotFound)
+					return
+				}
+				token = t
+				http.SetCookie(w, NewAccountRecoveryCookie(token))
+			}
+			data := struct {
+				Email,
+				Error string
+			}{
+				Email: email,
+				Error: errmsg,
+			}
+			if err := ts.ExecuteTemplate(w, "account-recovery.go.html", data); err != nil {
+				log.Println(err)
+				return
+			}
+		case "POST":
+			if token == "" {
+				RedirectAccountRecovery(w, r)
+				return
+			}
+			sm.SetAccountRecoveryError(token, "")
+
+			email := strings.TrimSpace(r.FormValue("email"))
+
+			if err := sm.SetAccountRecoveryEmail(token, email); err != nil {
+				log.Println(err)
+				sm.SetAccountRecoveryError(token, err.Error())
+				RedirectAccountRecovery(w, r)
+				return
+			}
+
+			// Check valid email
+			if err := ValidateEmail(email); err != nil {
+				log.Println(err)
+				sm.SetAccountRecoveryError(token, err.Error())
+				RedirectAccountRecovery(w, r)
+				return
+			}
+
+			// Get username associated with email
+			username, err := am.Username(email)
+			if err != nil {
+				log.Println(err)
+				sm.SetAccountRecoveryError(token, err.Error())
+				RedirectAccountRecovery(w, r)
+				return
+			}
+
+			if err := sm.SetAccountRecoveryUsername(token, username); err != nil {
+				log.Println(err)
+				sm.SetAccountRecoveryError(token, err.Error())
+				RedirectAccountRecovery(w, r)
+				return
+			}
+
+			code, err := ev.VerifyEmail(email)
+			// log.Println("VerifyEmail", code, err)
+			if err != nil {
+				log.Println(err)
+				sm.SetAccountRecoveryError(token, err.Error())
+				RedirectAccountRecovery(w, r)
+				return
+			}
+			if err := sm.SetAccountRecoveryChallenge(token, code); err != nil {
+				log.Println(err)
+				sm.SetAccountRecoveryError(token, err.Error())
+				RedirectAccountRecovery(w, r)
+				return
+			}
+
+			RedirectAccountRecoveryVerification(w, r)
+		}
+	})
+}
+
+func AccountRecoveryVerificationHandler(a Authenticator, ts *template.Template) http.Handler {
+	sm := a.SessionManager()
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		token, _, username, challenge, errmsg := CurrentAccountRecovery(sm, r)
+		// log.Println("CurrentAccountRecovery", token, email, username, challenge, errmsg)
+		if token == "" {
+			RedirectAccountRecovery(w, r)
+			return
+		}
+		switch r.Method {
+		case "GET":
+			data := struct {
+				Username,
+				Error string
+			}{
+				Username: username,
+				Error:    errmsg,
+			}
+			if err := ts.ExecuteTemplate(w, "account-recovery-verification.go.html", data); err != nil {
+				log.Println(err)
+				return
+			}
+		case "POST":
+			sm.SetAccountRecoveryError(token, "")
+
+			if strings.TrimSpace(r.FormValue("verification")) != challenge {
+				sm.SetAccountRecoveryError(token, ErrIncorrectEmailVerification.Error())
+				RedirectAccountRecoveryVerification(w, r)
+				return
+			}
+
+			token, err := sm.NewSignIn(username)
+			// log.Println("NewSignIn", token, err)
+			if err != nil {
+				log.Println(err)
+				http.Error(w, http.StatusText(http.StatusNotFound), http.StatusNotFound)
+				return
+			}
+
+			http.SetCookie(w, NewSignInCookie(token))
+
+			RedirectAccountPassword(w, r)
 		}
 	})
 }
