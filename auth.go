@@ -34,18 +34,23 @@ type authenticator struct {
 }
 
 func (a *authenticator) CurrentAccount(w http.ResponseWriter, r *http.Request) *Account {
-	id, session := a.sessions.Current(SESSION_SIGN_IN_COOKIE, w, r)
-	if session == nil {
+	token, username, authenticated, _ := CurrentSignIn(a.sessions, r)
+	log.Println(token, username, authenticated)
+	if token == "" || username == "" || !authenticated {
 		return nil
 	}
-	a.sessions.Delete(id)
-	id, err := a.sessions.Refresh(session)
+	a.sessions.SetSignInAuthenticated(token, false)
+	token, err := a.sessions.NewSignIn(username)
 	if err != nil {
 		log.Println(err)
 		return nil
 	}
-	http.SetCookie(w, session.Cookie(id))
-	return session.Account()
+	http.SetCookie(w, NewSignInCookie(token))
+	account, err := a.accounts.Lookup(username)
+	if err != nil {
+		return nil
+	}
+	return account
 }
 
 func (a *authenticator) AccountManager() AccountManager {

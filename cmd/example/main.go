@@ -43,10 +43,10 @@ func main() {
 	am := authgo.NewInMemoryAccountManager()
 
 	// Add Demo Account
-	if _, err := am.New(authtest.TEST_EMAIL, authtest.TEST_USERNAME, authtest.TEST_PASSWORD); err != nil {
+	if _, err := am.New(authtest.TEST_EMAIL, authtest.TEST_USERNAME, []byte(authtest.TEST_PASSWORD)); err != nil {
 		log.Fatal(err)
 	}
-	am.SetVerified(authtest.TEST_EMAIL, true)
+	am.SetEmailVerified(authtest.TEST_EMAIL, true)
 
 	// Create a Session Manager
 	sm := authgo.NewInMemorySessionManager()

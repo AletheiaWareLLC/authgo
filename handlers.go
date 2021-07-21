@@ -5,6 +5,7 @@ import (
 	"html/template"
 	"log"
 	"net/http"
+	"strings"
 )
 
 func AttachHandlers(a Authenticator, m *http.ServeMux, ts *template.Template) {
@@ -39,66 +40,99 @@ func SignInHandler(a Authenticator, ts *template.Template) http.Handler {
 	sm := a.SessionManager()
 	ev := a.EmailVerifier()
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		_, session := sm.Current(SESSION_SIGN_IN_COOKIE, w, r)
+		token, username, authenticated, errmsg := CurrentSignIn(sm, r)
+		// log.Println("CurrentSignIn", token, username, authenticated, errmsg)
 		switch r.Method {
 		case "GET":
-			if session == nil {
-				id, sess, err := sm.New(SESSION_SIGN_IN_COOKIE, SESSION_SIGN_IN_TIMEOUT, Secure())
+			if token == "" {
+				t, err := sm.NewSignIn("")
+				// log.Println("NewSignIn", t, err)
 				if err != nil {
 					log.Println(err)
 					http.Error(w, http.StatusText(http.StatusNotFound), http.StatusNotFound)
 					return
 				}
-				session = sess
-				http.SetCookie(w, session.Cookie(id))
+				token = t
+				http.SetCookie(w, NewSignInCookie(token))
 			}
-			if session.Account() != nil {
+			if authenticated {
 				// Already signed in
 				RedirectAccount(w, r)
 				return
 			}
 			data := struct {
-				Error string
-			}{}
-			if err := session.Error(); err != nil {
-				data.Error = err.Error()
+				Username string
+				Error    string
+			}{
+				Username: username,
+				Error:    errmsg,
 			}
 			if err := ts.ExecuteTemplate(w, "sign-in.go.html", data); err != nil {
 				log.Println(err)
 				return
 			}
 		case "POST":
-			if session == nil {
+			if token == "" {
 				RedirectSignIn(w, r)
 				return
 			}
-			username := r.FormValue("username")
-			password := r.FormValue("password")
-			if err := am.Authenticate(session, username, password); err != nil {
+			sm.SetSignInError(token, "")
+
+			username := strings.TrimSpace(r.FormValue("username"))
+			password := []byte(strings.TrimSpace(r.FormValue("password")))
+
+			if err := sm.SetSignInUsername(token, username); err != nil {
 				log.Println(err)
-				session.SetError(err)
+				sm.SetSignInError(token, err.Error())
 				RedirectSignIn(w, r)
 				return
 			}
-			if account := session.Account(); !am.Verified(account.Email) {
-				id, sess, err := sm.New(SESSION_SIGN_UP_COOKIE, SESSION_SIGN_UP_TIMEOUT, Secure())
+
+			account, err := am.Authenticate(username, password)
+			// log.Println("AuthenticateAccount", account, err)
+			if err != nil {
+				log.Println(err)
+				sm.SetSignInError(token, err.Error())
+				RedirectSignIn(w, r)
+				return
+			}
+
+			if err := sm.SetSignInAuthenticated(token, true); err != nil {
+				log.Println(err)
+				sm.SetSignInError(token, err.Error())
+				RedirectSignIn(w, r)
+				return
+			}
+
+			if !am.IsEmailVerified(account.Email) {
+				token, err := sm.NewSignUp()
+				// log.Println("NewSignUp", token, err)
 				if err != nil {
 					log.Println(err)
 					http.Error(w, http.StatusText(http.StatusNotFound), http.StatusNotFound)
 					return
 				}
-				http.SetCookie(w, sess.Cookie(id))
+				if err := sm.SetSignUpIdentity(token, account.Email, account.Username); err != nil {
+					log.Println(err)
+					http.Error(w, http.StatusText(http.StatusNotFound), http.StatusNotFound)
+				}
+
+				http.SetCookie(w, NewSignUpCookie(token))
+
 				code, err := ev.VerifyEmail(account.Email)
+				// log.Println("VerifyEmail", code, err)
 				if err != nil {
 					log.Println(err)
-					session.SetError(err)
+					sm.SetSignUpError(token, err.Error())
 					RedirectSignIn(w, r)
 					return
 				}
-				sess.SetAccount(account)
-				sess.SetValue(SESSION_SIGN_UP_USERNAME, username)
-				sess.SetValue(SESSION_SIGN_UP_EMAIL, account.Email)
-				sess.SetValue(SESSION_SIGN_UP_CHALLENGE, code)
+				if err := sm.SetSignUpChallenge(token, code); err != nil {
+					log.Println(err)
+					sm.SetSignUpError(token, err.Error())
+					RedirectSignIn(w, r)
+					return
+				}
 				RedirectSignUpVerification(w, r)
 				return
 			}
@@ -108,10 +142,12 @@ func SignInHandler(a Authenticator, ts *template.Template) http.Handler {
 }
 
 func SignOutHandler(a Authenticator, ts *template.Template) http.Handler {
+	am := a.AccountManager()
 	sm := a.SessionManager()
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		id, session := sm.Current(SESSION_SIGN_IN_COOKIE, w, r)
-		if session == nil || session.Account() == nil {
+		token, username, authenticated, errmsg := CurrentSignIn(sm, r)
+		// log.Println("CurrentSignIn", token, username, authenticated, errmsg)
+		if token == "" || username == "" || !authenticated {
 			// Not signed in
 			RedirectIndex(w, r)
 			return
@@ -119,19 +155,24 @@ func SignOutHandler(a Authenticator, ts *template.Template) http.Handler {
 		switch r.Method {
 		case "GET":
 			data := struct {
-				Error   string
 				Account *Account
-			}{}
-			if a := session.Account(); a != nil {
-				data.Account = a
+				Error   string
+			}{
+				Error: errmsg,
+			}
+			account, err := am.Lookup(username)
+			if err == nil {
+				data.Account = account
 			}
 			if err := ts.ExecuteTemplate(w, "sign-out.go.html", data); err != nil {
 				log.Println(err)
 				return
 			}
 		case "POST":
-			session.SetAccount(nil)
-			sm.Delete(id)
+			sm.SetSignInError(token, "")
+			if err := sm.SetSignInAuthenticated(token, false); err != nil {
+				log.Println(err)
+			}
 			RedirectIndex(w, r)
 		}
 	})
@@ -147,69 +188,107 @@ func SignUpHandler(a Authenticator, ts *template.Template) http.Handler {
 			RedirectAccount(w, r)
 			return
 		}
-		_, session := sm.Current(SESSION_SIGN_UP_COOKIE, w, r)
+		token, email, username, _, errmsg := CurrentSignUp(sm, r)
+		// log.Println("CurrentSignUp", token, email, username, challenge, errmsg)
 		switch r.Method {
 		case "GET":
-			if session == nil {
-				id, sess, err := sm.New(SESSION_SIGN_UP_COOKIE, SESSION_SIGN_UP_TIMEOUT, Secure())
+			if token == "" {
+				t, err := sm.NewSignUp()
+				// log.Println("NewSignUp", t, err)
 				if err != nil {
 					log.Println(err)
 					http.Error(w, http.StatusText(http.StatusNotFound), http.StatusNotFound)
 					return
 				}
-				session = sess
-				http.SetCookie(w, session.Cookie(id))
+				token = t
+				http.SetCookie(w, NewSignUpCookie(token))
 			}
 			data := struct {
-				Error,
 				Email,
-				Username string
+				Username,
+				Error string
 			}{
-				Email:    session.Value(SESSION_SIGN_UP_EMAIL),
-				Username: session.Value(SESSION_SIGN_UP_USERNAME),
-			}
-			if err := session.Error(); err != nil {
-				data.Error = err.Error()
+				Email:    email,
+				Username: username,
+				Error:    errmsg,
 			}
 			if err := ts.ExecuteTemplate(w, "sign-up.go.html", data); err != nil {
 				log.Println(err)
 				return
 			}
 		case "POST":
-			if session == nil {
+			if token == "" {
 				RedirectSignUp(w, r)
 				return
 			}
-			email := r.FormValue("email")
-			username := r.FormValue("username")
-			password := r.FormValue("password")
-			confirmation := r.FormValue("confirmation")
-			session.SetValue(SESSION_SIGN_UP_EMAIL, email)
-			session.SetValue(SESSION_SIGN_UP_USERNAME, username)
-			session.SetValue(SESSION_SIGN_UP_PASSWORD, password)
-			session.SetValue(SESSION_SIGN_UP_CONFIRMATION, confirmation)
-			if err := ValidateSignUpSession(session); err != nil {
+			sm.SetSignUpError(token, "")
+
+			email := strings.TrimSpace(r.FormValue("email"))
+			username := strings.TrimSpace(r.FormValue("username"))
+			password := []byte(strings.TrimSpace(r.FormValue("password")))
+			confirmation := []byte(strings.TrimSpace(r.FormValue("confirmation")))
+
+			if err := sm.SetSignUpIdentity(token, email, username); err != nil {
 				log.Println(err)
-				session.SetError(err)
+				sm.SetSignUpError(token, err.Error())
 				RedirectSignUp(w, r)
 				return
 			}
-			acc, err := am.New(email, username, password)
+
+			// Check valid email
+			if err := ValidateEmail(email); err != nil {
+				log.Println(err)
+				sm.SetSignUpError(token, err.Error())
+				RedirectSignUp(w, r)
+				return
+			}
+
+			// Check valid username
+			if err := ValidateUsername(username); err != nil {
+				log.Println(err)
+				sm.SetSignUpError(token, err.Error())
+				RedirectSignUp(w, r)
+				return
+			}
+
+			// Check valid password and matching confirm
+			if err := ValidatePassword(password); err != nil {
+				log.Println(err)
+				sm.SetSignUpError(token, err.Error())
+				RedirectSignUp(w, r)
+				return
+			}
+			if err := MatchPasswords(password, confirmation); err != nil {
+				log.Println(err)
+				sm.SetSignUpError(token, err.Error())
+				RedirectSignUp(w, r)
+				return
+			}
+
+			_, err := am.New(email, username, password)
+			// log.Println("NewAccount", acc, err)
 			if err != nil {
 				log.Println(err)
-				session.SetError(err)
+				sm.SetSignUpError(token, err.Error())
 				RedirectSignUp(w, r)
 				return
 			}
-			session.SetAccount(acc)
+
 			code, err := ev.VerifyEmail(email)
+			// log.Println("VerifyEmail", code, err)
 			if err != nil {
 				log.Println(err)
-				session.SetError(err)
+				sm.SetSignUpError(token, err.Error())
 				RedirectSignUp(w, r)
 				return
 			}
-			session.SetValue(SESSION_SIGN_UP_CHALLENGE, code)
+			if err := sm.SetSignUpChallenge(token, code); err != nil {
+				log.Println(err)
+				sm.SetSignUpError(token, err.Error())
+				RedirectSignUp(w, r)
+				return
+			}
+
 			RedirectSignUpVerification(w, r)
 		}
 	})
@@ -219,8 +298,9 @@ func SignUpVerificationHandler(a Authenticator, ts *template.Template) http.Hand
 	am := a.AccountManager()
 	sm := a.SessionManager()
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		id, session := sm.Current(SESSION_SIGN_UP_COOKIE, w, r)
-		if session == nil {
+		token, email, username, challenge, errmsg := CurrentSignUp(sm, r)
+		// log.Println("CurrentSignUp", token, email, username, challenge, errmsg)
+		if token == "" {
 			RedirectSignUp(w, r)
 			return
 		}
@@ -228,34 +308,38 @@ func SignUpVerificationHandler(a Authenticator, ts *template.Template) http.Hand
 		case "GET":
 			data := struct {
 				Error string
-			}{}
-			if err := session.Error(); err != nil {
-				data.Error = err.Error()
+			}{
+				Error: errmsg,
 			}
 			if err := ts.ExecuteTemplate(w, "sign-up-verification.go.html", data); err != nil {
 				log.Println(err)
 				return
 			}
 		case "POST":
-			session.SetError(nil)
-			v := r.FormValue("verification")
-			session.SetValue(SESSION_SIGN_UP_VERIFICATION, v)
-			if v != session.Value(SESSION_SIGN_UP_CHALLENGE) {
-				session.SetError(ErrIncorrectEmailVerification)
+			sm.SetSignUpError(token, "")
+
+			if strings.TrimSpace(r.FormValue("verification")) != challenge {
+				sm.SetSignUpError(token, ErrIncorrectEmailVerification.Error())
 				RedirectSignUpVerification(w, r)
 				return
 			}
-			account := session.Account()
-			am.SetVerified(account.Email, true)
-			sm.Delete(id)
-			id, sess, err := sm.New(SESSION_SIGN_IN_COOKIE, SESSION_SIGN_IN_TIMEOUT, Secure())
+
+			if err := am.SetEmailVerified(email, true); err != nil {
+				log.Println(err)
+				http.Error(w, http.StatusText(http.StatusNotFound), http.StatusNotFound)
+				return
+			}
+
+			token, err := sm.NewSignIn(username)
+			// log.Println("NewSignIn", token, err)
 			if err != nil {
 				log.Println(err)
 				http.Error(w, http.StatusText(http.StatusNotFound), http.StatusNotFound)
 				return
 			}
-			sess.SetAccount(account)
-			http.SetCookie(w, sess.Cookie(id))
+
+			http.SetCookie(w, NewSignInCookie(token))
+
 			RedirectIndex(w, r)
 		}
 	})

@@ -8,192 +8,194 @@ import (
 )
 
 const (
-	SESSION_SIGN_IN_COOKIE       = "sign-in-session"
-	SESSION_SIGN_UP_COOKIE       = "sign-up-session"
-	SESSION_ID_LENGTH            = 16
-	SESSION_SIGN_IN_TIMEOUT      = 30 * time.Minute
-	SESSION_SIGN_UP_TIMEOUT      = 10 * time.Minute
-	SESSION_SIGN_UP_USERNAME     = "username"
-	SESSION_SIGN_UP_EMAIL        = "email"
-	SESSION_SIGN_UP_CHALLENGE    = "challenge"
-	SESSION_SIGN_UP_VERIFICATION = "verification"
-	SESSION_SIGN_UP_PASSWORD     = "password"
-	SESSION_SIGN_UP_CONFIRMATION = "confirmation"
+	SESSION_SIGN_IN_COOKIE  = "sign-in-session"
+	SESSION_SIGN_UP_COOKIE  = "sign-up-session"
+	SESSION_TOKEN_LENGTH    = 16
+	SESSION_SIGN_IN_TIMEOUT = 30 * time.Minute
+	SESSION_SIGN_UP_TIMEOUT = 10 * time.Minute
 )
 
-type Session interface {
-	Name() string
-	Timeout() time.Duration
-	Secure() bool
-	Cookie(string) *http.Cookie
-	Error() error
-	SetError(error)
-	Account() *Account
-	SetAccount(*Account)
-	Value(string) string
-	SetValue(string, string)
-}
-
 type SessionManager interface {
-	New(string, time.Duration, bool) (string, Session, error)
-	Current(string, http.ResponseWriter, *http.Request) (string, Session)
-	Lookup(string) Session
-	Refresh(Session) (string, error)
-	Delete(string)
+	NewSignUp() (string, error)
+	LookupSignUp(string) (string, string, string, string, bool)
+	SetSignUpIdentity(string, string, string) error
+	SetSignUpChallenge(string, string) error
+	SetSignUpError(string, string)
+
+	NewSignIn(string) (string, error)
+	LookupSignIn(string) (string, bool, string, bool)
+	SetSignInUsername(string, string) error
+	SetSignInAuthenticated(string, bool) error
+	SetSignInError(string, string)
 }
 
-func NewSessionId() (string, error) {
-	return cryptogo.RandomString(SESSION_ID_LENGTH)
+func NewSessionToken() (string, error) {
+	return cryptogo.RandomString(SESSION_TOKEN_LENGTH)
 }
 
-/*
-func NewSessionCookie(session string, timeout time.Duration, secure bool) *http.Cookie {
-	return NewCookie(SESSION_SIGN_IN_COOKIE, session, timeout, secure)
+func NewSignUpCookie(token string) *http.Cookie {
+	return NewCookie(SESSION_SIGN_UP_COOKIE, token, SESSION_SIGN_UP_TIMEOUT)
 }
 
-func NewSessionCookie(session string, timeout time.Duration, secure bool) *http.Cookie {
-	return NewCookie(SESSION_SIGN_UP_COOKIE, session, timeout, secure)
+func NewSignInCookie(token string) *http.Cookie {
+	return NewCookie(SESSION_SIGN_IN_COOKIE, token, SESSION_SIGN_IN_TIMEOUT)
 }
 
-func SessionCookies(r *http.Request) []*http.Cookie {
-	return Cookies(SESSION_SIGN_IN_COOKIE, r)
-}
-
-func SessionCookies(r *http.Request) []*http.Cookie {
-	return Cookies(SESSION_SIGN_UP_COOKIE, r)
-}
-*/
-
-type session struct {
-	name    string
-	timeout time.Duration
-	secure  bool
-	error   error
-	account *Account
-	values  map[string]string
-}
-
-func (s *session) Name() string {
-	return s.name
-}
-
-func (s *session) Timeout() time.Duration {
-	return s.timeout
-}
-
-func (s *session) Secure() bool {
-	return s.secure
-}
-
-func (s *session) Cookie(id string) *http.Cookie {
-	return NewCookie(s.name, id, s.timeout, s.secure)
-}
-
-func (s *session) Error() error {
-	return s.error
-}
-
-func (s *session) SetError(error error) {
-	s.error = error
-}
-
-func (s *session) Account() *Account {
-	return s.account
-}
-
-func (s *session) SetAccount(a *Account) {
-	s.account = a
-}
-
-func (s *session) Value(key string) string {
-	return s.values[key]
-}
-
-func (s *session) SetValue(key string, value string) {
-	s.values[key] = value
-}
-
-func ValidateSignUpSession(s Session) error {
-	// Check valid email
-	if err := ValidateEmail(s.Value(SESSION_SIGN_UP_EMAIL)); err != nil {
-		return err
+func CurrentSignUp(m SessionManager, r *http.Request) (string, string, string, string, string) {
+	c, err := r.Cookie(SESSION_SIGN_UP_COOKIE)
+	if err != nil {
+		return "", "", "", "", ""
 	}
-	// Check valid username
-	if err := ValidateUsername(s.Value(SESSION_SIGN_UP_USERNAME)); err != nil {
-		return err
+	token := c.Value
+	email, username, challenge, errmsg, ok := m.LookupSignUp(token)
+	if !ok {
+		return "", "", "", "", ""
 	}
-	// Check valid password and matching confirm
-	if err := ValidatePassword(s.Value(SESSION_SIGN_UP_PASSWORD)); err != nil {
-		return err
+	return token, email, username, challenge, errmsg
+}
+
+func CurrentSignIn(m SessionManager, r *http.Request) (string, string, bool, string) {
+	c, err := r.Cookie(SESSION_SIGN_IN_COOKIE)
+	if err != nil {
+		return "", "", false, ""
 	}
-	if err := MatchPasswords(s.Value(SESSION_SIGN_UP_PASSWORD), s.Value(SESSION_SIGN_UP_CONFIRMATION)); err != nil {
-		return err
+	token := c.Value
+	username, authenticated, errmsg, ok := m.LookupSignIn(token)
+	if !ok {
+		return "", "", false, ""
 	}
-	return nil
+	return token, username, authenticated, errmsg
 }
 
 func NewInMemorySessionManager() SessionManager {
 	return &inMemorySessionManager{
-		sessions: make(map[string]Session),
+		signupTokens:     make(map[string]bool),
+		signupCreated:    make(map[string]time.Time),
+		signupEmails:     make(map[string]string),
+		signupUsernames:  make(map[string]string),
+		signupChallenges: make(map[string]string),
+		signupErrors:     make(map[string]string),
+		signinTokens:     make(map[string]bool),
+		signinCreated:    make(map[string]time.Time),
+		signinUsernames:  make(map[string]string),
+		signinAuths:      make(map[string]bool),
+		signinErrors:     make(map[string]string),
 	}
 }
 
 type inMemorySessionManager struct {
 	sync.RWMutex
-	sessions map[string]Session
+	signupTokens     map[string]bool
+	signupCreated    map[string]time.Time
+	signupEmails     map[string]string
+	signupUsernames  map[string]string
+	signupChallenges map[string]string
+	signupErrors     map[string]string
+	signinTokens     map[string]bool
+	signinCreated    map[string]time.Time
+	signinUsernames  map[string]string
+	signinAuths      map[string]bool
+	signinErrors     map[string]string
 }
 
-func (m *inMemorySessionManager) Current(name string, w http.ResponseWriter, r *http.Request) (id string, session Session) {
-	cookies := Cookies(name, r)
-	count := len(cookies)
-	for i := 0; i < count && session == nil; i++ {
-		id = cookies[i].Value
-		session = m.Lookup(id)
+func (m *inMemorySessionManager) NewSignUp() (string, error) {
+	token, err := NewSessionToken()
+	if err != nil {
+		return "", err
 	}
-	return
+
+	m.signupTokens[token] = true
+	m.signupCreated[token] = time.Now()
+
+	return token, nil
 }
 
-func (m *inMemorySessionManager) Lookup(id string) Session {
+func (m *inMemorySessionManager) LookupSignUp(token string) (string, string, string, string, bool) {
 	m.RLock()
 	defer m.RUnlock()
-	return m.sessions[id]
+	ok := m.signupTokens[token]
+	created := m.signupCreated[token]
+	if !ok || created.Add(SESSION_SIGN_UP_TIMEOUT).Before(time.Now()) {
+		return "", "", "", "", false
+	}
+	email := m.signupEmails[token]
+	username := m.signupUsernames[token]
+	challenge := m.signupChallenges[token]
+	error := m.signupErrors[token]
+	return email, username, challenge, error, ok
 }
 
-func (m *inMemorySessionManager) New(name string, timeout time.Duration, secure bool) (string, Session, error) {
-	s := &session{
-		name:    name,
-		timeout: timeout,
-		secure:  secure,
-		values:  make(map[string]string),
-	}
-	id, err := m.Refresh(s)
-	if err != nil {
-		return "", nil, err
-	}
-	return id, s, nil
+func (m *inMemorySessionManager) SetSignUpIdentity(token, email, username string) error {
+	m.Lock()
+	defer m.Unlock()
+	m.signupEmails[token] = email
+	m.signupUsernames[token] = username
+	return nil
 }
 
-func (m *inMemorySessionManager) Refresh(s Session) (string, error) {
-	id, err := NewSessionId()
+func (m *inMemorySessionManager) SetSignUpChallenge(token, challenge string) error {
+	m.Lock()
+	defer m.Unlock()
+	m.signupChallenges[token] = challenge
+	return nil
+}
+
+func (m *inMemorySessionManager) SetSignUpError(token string, errmsg string) {
+	m.Lock()
+	defer m.Unlock()
+	m.signupErrors[token] = errmsg
+}
+
+func (m *inMemorySessionManager) NewSignIn(username string) (string, error) {
+	token, err := NewSessionToken()
 	if err != nil {
 		return "", err
 	}
 
 	m.Lock()
-	m.sessions[id] = s
-	m.Unlock()
+	defer m.Unlock()
 
-	go func() {
-		// Delete session after timeout
-		time.Sleep(s.Timeout())
-		m.Delete(id)
-	}()
+	m.signinTokens[token] = true
+	m.signinCreated[token] = time.Now()
 
-	return id, nil
+	if username != "" {
+		m.signinUsernames[token] = username
+		m.signinAuths[token] = true
+	}
+
+	return token, nil
 }
 
-func (m *inMemorySessionManager) Delete(id string) {
+func (m *inMemorySessionManager) LookupSignIn(token string) (string, bool, string, bool) {
+	m.RLock()
+	defer m.RUnlock()
+	ok := m.signinTokens[token]
+	created := m.signinCreated[token]
+	if !ok || created.Add(SESSION_SIGN_IN_TIMEOUT).Before(time.Now()) {
+		return "", false, "", false
+	}
+	username := m.signinUsernames[token]
+	authenticated := m.signinAuths[token]
+	error := m.signinErrors[token]
+	return username, authenticated, error, ok
+}
+
+func (m *inMemorySessionManager) SetSignInUsername(token string, username string) error {
 	m.Lock()
 	defer m.Unlock()
-	delete(m.sessions, id)
+	m.signinUsernames[token] = username
+	return nil
+}
+
+func (m *inMemorySessionManager) SetSignInAuthenticated(token string, authenticated bool) error {
+	m.Lock()
+	defer m.Unlock()
+	m.signinAuths[token] = authenticated
+	return nil
+}
+
+func (m *inMemorySessionManager) SetSignInError(token string, errmsg string) {
+	m.Lock()
+	defer m.Unlock()
+	m.signinErrors[token] = errmsg
 }

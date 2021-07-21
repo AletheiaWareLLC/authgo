@@ -18,10 +18,11 @@ type Account struct {
 }
 
 type AccountManager interface {
-	New(string, string, string) (*Account, error)
-	Authenticate(Session, string, string) error
-	Verified(string) bool
-	SetVerified(string, bool) error
+	New(string, string, []byte) (*Account, error)
+	Lookup(string) (*Account, error)
+	Authenticate(string, []byte) (*Account, error)
+	IsEmailVerified(string) bool
+	SetEmailVerified(string, bool) error
 }
 
 func NewInMemoryAccountManager() AccountManager {
@@ -29,7 +30,7 @@ func NewInMemoryAccountManager() AccountManager {
 		emails:    make(map[string]string),
 		usernames: make(map[string]string),
 		accounts:  make(map[string]*Account),
-		passwords: make(map[string]string),
+		passwords: make(map[string][]byte),
 		verified:  make(map[string]bool),
 	}
 }
@@ -39,11 +40,11 @@ type inMemoryAccountManager struct {
 	emails    map[string]string
 	usernames map[string]string
 	accounts  map[string]*Account
-	passwords map[string]string
+	passwords map[string][]byte
 	verified  map[string]bool
 }
 
-func (m *inMemoryAccountManager) New(email, username, password string) (*Account, error) {
+func (m *inMemoryAccountManager) New(email, username string, password []byte) (*Account, error) {
 	m.Lock()
 	defer m.Unlock()
 	if _, ok := m.usernames[email]; ok {
@@ -68,28 +69,33 @@ func (m *inMemoryAccountManager) New(email, username, password string) (*Account
 	return acc, nil
 }
 
-func (m *inMemoryAccountManager) Authenticate(session Session, username, password string) error {
+func (m *inMemoryAccountManager) Lookup(username string) (*Account, error) {
+	m.RLock()
+	defer m.RUnlock()
+	return m.accounts[username], nil
+}
+
+func (m *inMemoryAccountManager) Authenticate(username string, password []byte) (*Account, error) {
 	m.RLock()
 	defer m.RUnlock()
 	acc, ok := m.accounts[username]
 	if !ok {
-		return ErrIncorrectCredentials
+		return nil, ErrIncorrectCredentials
 	}
-	pwd, ok := m.passwords[username]
-	if !ok || !CheckPasswordHash(pwd, password) {
-		return ErrIncorrectCredentials
+	hash, ok := m.passwords[username]
+	if !ok || !CheckPasswordHash(hash, password) {
+		return nil, ErrIncorrectCredentials
 	}
-	session.SetAccount(acc)
-	return nil
+	return acc, nil
 }
 
-func (m *inMemoryAccountManager) Verified(email string) bool {
+func (m *inMemoryAccountManager) IsEmailVerified(email string) bool {
 	m.RLock()
 	defer m.RUnlock()
 	return m.verified[email]
 }
 
-func (m *inMemoryAccountManager) SetVerified(email string, verified bool) error {
+func (m *inMemoryAccountManager) SetEmailVerified(email string, verified bool) error {
 	m.Lock()
 	defer m.Unlock()
 	m.verified[email] = verified

@@ -4,7 +4,6 @@ import (
 	"aletheiaware.com/authgo"
 	"github.com/stretchr/testify/assert"
 	"testing"
-	"time"
 )
 
 const (
@@ -22,21 +21,22 @@ func NewAuthenticator(t *testing.T) authgo.Authenticator {
 }
 
 func NewTestAccount(t *testing.T, a authgo.Authenticator) *authgo.Account {
-	acc, err := a.AccountManager().New(TEST_EMAIL, TEST_USERNAME, TEST_PASSWORD)
+	acc, err := a.AccountManager().New(TEST_EMAIL, TEST_USERNAME, []byte(TEST_PASSWORD))
 	assert.Nil(t, err)
 	return acc
 }
 
-func SignIn(t *testing.T, a authgo.Authenticator) (string, authgo.Session) {
+func SignIn(t *testing.T, a authgo.Authenticator) (string, *authgo.Account) {
 	t.Helper()
-	id, session, err := a.SessionManager().New(authgo.SESSION_SIGN_IN_COOKIE, time.Minute, false)
+	sm := a.SessionManager()
+	token, err := sm.NewSignIn(TEST_USERNAME)
 	assert.Nil(t, err)
-	err = a.AccountManager().Authenticate(session, TEST_USERNAME, TEST_PASSWORD)
+	account, err := a.AccountManager().Authenticate(TEST_USERNAME, []byte(TEST_PASSWORD))
 	assert.Nil(t, err)
-	return id, session
+	return token, account
 }
 
-func SignOut(t *testing.T, a authgo.Authenticator, session string) {
+func SignOut(t *testing.T, a authgo.Authenticator, token string) {
 	t.Helper()
-	a.SessionManager().Delete(session)
+	a.SessionManager().SetSignInAuthenticated(token, false)
 }
