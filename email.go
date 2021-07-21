@@ -4,13 +4,13 @@ import (
 	"aletheiaware.com/cryptogo"
 	"bytes"
 	"errors"
+	"html/template"
 	"log"
 	"net/smtp"
 	"regexp"
-	"text/template"
 )
 
-const VERIFICATION_CODE_LENGTH = 6
+const VERIFICATION_CODE_LENGTH = 8
 
 var (
 	ErrInvalidEmail               = errors.New("Invalid Email Address")
@@ -31,24 +31,24 @@ type EmailVerifier interface {
 	VerifyEmail(email string) (string, error)
 }
 
-func SetEmail(address, from, to string, template *template.Template, data interface{}) error {
+func SetEmail(server, from, to string, template *template.Template, data interface{}) error {
 	var buffer bytes.Buffer
 	if err := template.Execute(&buffer, data); err != nil {
 		log.Println(err)
 		return err
 	}
-	return smtp.SendMail(address, nil, from, []string{to}, buffer.Bytes())
+	return smtp.SendMail(server, nil, from, []string{to}, buffer.Bytes())
 }
 
 type SmtpEmailVerifier struct {
-	Address  string
+	Server   string
 	Sender   string
 	Template *template.Template
 }
 
-func NewSmtpEmailVerifier(address, sender string, template *template.Template) *SmtpEmailVerifier {
+func NewSmtpEmailVerifier(server, sender string, template *template.Template) *SmtpEmailVerifier {
 	return &SmtpEmailVerifier{
-		Address:  address,
+		Server:   server,
 		Sender:   sender,
 		Template: template,
 	}
@@ -70,7 +70,7 @@ func (v SmtpEmailVerifier) VerifyEmail(email string) (string, error) {
 		To:   email,
 		Code: code,
 	}
-	if err := SetEmail(v.Address, v.Sender, email, v.Template, data); err != nil {
+	if err := SetEmail(v.Server, v.Sender, email, v.Template, data); err != nil {
 		return "", err
 	}
 	return code, nil
