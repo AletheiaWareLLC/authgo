@@ -3,6 +3,7 @@ package authgo
 import (
 	"errors"
 	"sync"
+	"time"
 )
 
 var (
@@ -13,6 +14,7 @@ var (
 
 type Account struct {
 	Email, Username string
+	Created         time.Time
 }
 
 type AccountManager interface {
@@ -57,6 +59,7 @@ func (m *inMemoryAccountManager) New(email, username, password string) (*Account
 	acc := &Account{
 		Email:    email,
 		Username: username,
+		Created:  time.Now(),
 	}
 	m.emails[username] = email
 	m.usernames[email] = username
