@@ -2,7 +2,12 @@ package main
 
 import (
 	"aletheiaware.com/authgo"
+	"aletheiaware.com/authgo/account"
 	"aletheiaware.com/authgo/authtest"
+	"aletheiaware.com/authgo/cmd/example/handler"
+	"aletheiaware.com/authgo/cmd/example/model"
+	authhandler "aletheiaware.com/authgo/handler"
+	"aletheiaware.com/authgo/session"
 	"crypto/tls"
 	"embed"
 	"html/template"
@@ -13,24 +18,24 @@ import (
 	"time"
 )
 
-//go:embed html
+//go:embed assets
 var embeddedFS embed.FS
 
 func main() {
 	// Create Multiplexer
 	mux := http.NewServeMux()
 
-	AttachHealthHandler(mux)
+	handler.AttachHealthHandler(mux)
 
 	// Handle Static Assets
-	staticFS, err := fs.Sub(embeddedFS, path.Join("html", "static"))
+	staticFS, err := fs.Sub(embeddedFS, path.Join("assets", "html", "static"))
 	if err != nil {
 		log.Fatal(err)
 	}
-	AttachStaticHandler(mux, staticFS)
+	handler.AttachStaticHandler(mux, staticFS)
 
 	// Parse Templates
-	templateFS, err := fs.Sub(embeddedFS, path.Join("html", "template"))
+	templateFS, err := fs.Sub(embeddedFS, path.Join("assets", "html", "template"))
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -40,7 +45,7 @@ func main() {
 	}
 
 	// Create Account Manager
-	am := authgo.NewInMemoryAccountManager()
+	am := account.NewInMemoryManager()
 
 	// Add Demo Account
 	if _, err := am.New(authtest.TEST_EMAIL, authtest.TEST_USERNAME, []byte(authtest.TEST_PASSWORD)); err != nil {
@@ -49,7 +54,7 @@ func main() {
 	am.SetEmailVerified(authtest.TEST_EMAIL, true)
 
 	// Create a Session Manager
-	sm := authgo.NewInMemorySessionManager()
+	sm := session.NewInMemoryManager()
 
 	// Create Email Verifier
 	ev := authtest.NewEmailVerifier()
@@ -58,29 +63,29 @@ func main() {
 	a := authgo.NewAuthenticator(am, sm, ev)
 
 	// Attach Authentication Handlers
-	authgo.AttachHandlers(a, mux, templates)
+	authhandler.AttachHandlers(a, mux, templates)
 
 	// Create Product Manager
-	products := NewInMemoryProductManager()
+	products := model.NewInMemoryProductManager()
 
 	// Add Demo Products
-	products.AddProduct(&Product{
+	products.AddProduct(&model.Product{
 		ID:   "1",
 		Name: "Foo",
 	})
-	products.AddProduct(&Product{
+	products.AddProduct(&model.Product{
 		ID:   "2",
 		Name: "Bar",
 	})
 
 	// Handle All Products
-	AttachProductsHandler(mux, a, products, templates)
+	handler.AttachProductsHandler(mux, a, products, templates)
 
 	// Handle Individual Product
-	AttachProductHandler(mux, a, products, templates)
+	handler.AttachProductHandler(mux, a, products, templates)
 
 	// Handle Index
-	AttachIndexHandler(mux, a, templates)
+	handler.AttachIndexHandler(mux, a, templates)
 
 	// Start Server
 	if authgo.Secure() {

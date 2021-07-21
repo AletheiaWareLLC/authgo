@@ -3,7 +3,6 @@ package authgo
 import (
 	"aletheiaware.com/cryptogo"
 	"net/http"
-	"sync"
 	"time"
 )
 
@@ -32,8 +31,8 @@ type SessionManager interface {
 	SetSignInAuthenticated(string, bool) error
 	SetSignInError(string, string)
 
-	NewAccountPassword() (string, error)
-	LookupAccountPassword(string) (string, bool)
+	NewAccountPassword(string) (string, error)
+	LookupAccountPassword(string) (string, string, bool)
 	SetAccountPasswordError(string, string)
 
 	NewAccountRecovery() (string, error)
@@ -90,17 +89,17 @@ func CurrentSignIn(m SessionManager, r *http.Request) (string, string, bool, str
 	return token, username, authenticated, errmsg
 }
 
-func CurrentAccountPassword(m SessionManager, r *http.Request) (string, string) {
+func CurrentAccountPassword(m SessionManager, r *http.Request) (string, string, string) {
 	c, err := r.Cookie(SESSION_ACCOUNT_PASSWORD_COOKIE)
 	if err != nil {
-		return "", ""
+		return "", "", ""
 	}
 	token := c.Value
-	errmsg, ok := m.LookupAccountPassword(token)
+	username, errmsg, ok := m.LookupAccountPassword(token)
 	if !ok {
-		return "", ""
+		return "", "", ""
 	}
-	return token, errmsg
+	return token, username, errmsg
 }
 
 func CurrentAccountRecovery(m SessionManager, r *http.Request) (string, string, string, string, string) {
@@ -114,245 +113,4 @@ func CurrentAccountRecovery(m SessionManager, r *http.Request) (string, string, 
 		return "", "", "", "", ""
 	}
 	return token, email, username, challenge, errmsg
-}
-
-func NewInMemorySessionManager() SessionManager {
-	return &inMemorySessionManager{
-		signupTokens:       make(map[string]bool),
-		signupCreated:      make(map[string]time.Time),
-		signupEmails:       make(map[string]string),
-		signupUsernames:    make(map[string]string),
-		signupChallenges:   make(map[string]string),
-		signupErrors:       make(map[string]string),
-		signinTokens:       make(map[string]bool),
-		signinCreated:      make(map[string]time.Time),
-		signinUsernames:    make(map[string]string),
-		signinAuths:        make(map[string]bool),
-		signinErrors:       make(map[string]string),
-		passwordTokens:     make(map[string]bool),
-		passwordCreated:    make(map[string]time.Time),
-		passwordErrors:     make(map[string]string),
-		recoveryTokens:     make(map[string]bool),
-		recoveryCreated:    make(map[string]time.Time),
-		recoveryEmails:     make(map[string]string),
-		recoveryUsernames:  make(map[string]string),
-		recoveryChallenges: make(map[string]string),
-		recoveryErrors:     make(map[string]string),
-	}
-}
-
-type inMemorySessionManager struct {
-	sync.RWMutex
-	signupTokens       map[string]bool
-	signupCreated      map[string]time.Time
-	signupEmails       map[string]string
-	signupUsernames    map[string]string
-	signupChallenges   map[string]string
-	signupErrors       map[string]string
-	signinTokens       map[string]bool
-	signinCreated      map[string]time.Time
-	signinUsernames    map[string]string
-	signinAuths        map[string]bool
-	signinErrors       map[string]string
-	passwordTokens     map[string]bool
-	passwordCreated    map[string]time.Time
-	passwordErrors     map[string]string
-	recoveryTokens     map[string]bool
-	recoveryCreated    map[string]time.Time
-	recoveryEmails     map[string]string
-	recoveryUsernames  map[string]string
-	recoveryChallenges map[string]string
-	recoveryErrors     map[string]string
-}
-
-func (m *inMemorySessionManager) NewSignUp() (string, error) {
-	token, err := NewSessionToken()
-	if err != nil {
-		return "", err
-	}
-
-	m.signupTokens[token] = true
-	m.signupCreated[token] = time.Now()
-
-	return token, nil
-}
-
-func (m *inMemorySessionManager) LookupSignUp(token string) (string, string, string, string, bool) {
-	m.RLock()
-	defer m.RUnlock()
-	ok := m.signupTokens[token]
-	created := m.signupCreated[token]
-	if !ok || created.Add(SESSION_SIGN_UP_TIMEOUT).Before(time.Now()) {
-		return "", "", "", "", false
-	}
-	email := m.signupEmails[token]
-	username := m.signupUsernames[token]
-	challenge := m.signupChallenges[token]
-	error := m.signupErrors[token]
-	return email, username, challenge, error, ok
-}
-
-func (m *inMemorySessionManager) SetSignUpIdentity(token, email, username string) error {
-	m.Lock()
-	defer m.Unlock()
-	m.signupEmails[token] = email
-	m.signupUsernames[token] = username
-	return nil
-}
-
-func (m *inMemorySessionManager) SetSignUpChallenge(token, challenge string) error {
-	m.Lock()
-	defer m.Unlock()
-	m.signupChallenges[token] = challenge
-	return nil
-}
-
-func (m *inMemorySessionManager) SetSignUpError(token string, errmsg string) {
-	m.Lock()
-	defer m.Unlock()
-	m.signupErrors[token] = errmsg
-}
-
-func (m *inMemorySessionManager) NewSignIn(username string) (string, error) {
-	token, err := NewSessionToken()
-	if err != nil {
-		return "", err
-	}
-
-	m.Lock()
-	defer m.Unlock()
-
-	m.signinTokens[token] = true
-	m.signinCreated[token] = time.Now()
-
-	if username != "" {
-		m.signinUsernames[token] = username
-		m.signinAuths[token] = true
-	}
-
-	return token, nil
-}
-
-func (m *inMemorySessionManager) LookupSignIn(token string) (string, bool, string, bool) {
-	m.RLock()
-	defer m.RUnlock()
-	ok := m.signinTokens[token]
-	created := m.signinCreated[token]
-	if !ok || created.Add(SESSION_SIGN_IN_TIMEOUT).Before(time.Now()) {
-		return "", false, "", false
-	}
-	username := m.signinUsernames[token]
-	authenticated := m.signinAuths[token]
-	error := m.signinErrors[token]
-	return username, authenticated, error, ok
-}
-
-func (m *inMemorySessionManager) SetSignInUsername(token string, username string) error {
-	m.Lock()
-	defer m.Unlock()
-	m.signinUsernames[token] = username
-	return nil
-}
-
-func (m *inMemorySessionManager) SetSignInAuthenticated(token string, authenticated bool) error {
-	m.Lock()
-	defer m.Unlock()
-	m.signinAuths[token] = authenticated
-	return nil
-}
-
-func (m *inMemorySessionManager) SetSignInError(token string, errmsg string) {
-	m.Lock()
-	defer m.Unlock()
-	m.signinErrors[token] = errmsg
-}
-
-func (m *inMemorySessionManager) NewAccountPassword() (string, error) {
-	token, err := NewSessionToken()
-	if err != nil {
-		return "", err
-	}
-
-	m.Lock()
-	defer m.Unlock()
-
-	m.passwordTokens[token] = true
-	m.passwordCreated[token] = time.Now()
-
-	return token, nil
-}
-
-func (m *inMemorySessionManager) LookupAccountPassword(token string) (string, bool) {
-	m.RLock()
-	defer m.RUnlock()
-	ok := m.passwordTokens[token]
-	created := m.passwordCreated[token]
-	if !ok || created.Add(SESSION_ACCOUNT_PASSWORD_TIMEOUT).Before(time.Now()) {
-		return "", false
-	}
-	error := m.passwordErrors[token]
-	return error, ok
-}
-
-func (m *inMemorySessionManager) SetAccountPasswordError(token string, errmsg string) {
-	m.Lock()
-	defer m.Unlock()
-	m.passwordErrors[token] = errmsg
-}
-
-func (m *inMemorySessionManager) NewAccountRecovery() (string, error) {
-	token, err := NewSessionToken()
-	if err != nil {
-		return "", err
-	}
-
-	m.Lock()
-	defer m.Unlock()
-
-	m.recoveryTokens[token] = true
-	m.recoveryCreated[token] = time.Now()
-
-	return token, nil
-}
-
-func (m *inMemorySessionManager) LookupAccountRecovery(token string) (string, string, string, string, bool) {
-	m.RLock()
-	defer m.RUnlock()
-	ok := m.recoveryTokens[token]
-	created := m.recoveryCreated[token]
-	if !ok || created.Add(SESSION_ACCOUNT_RECOVERY_TIMEOUT).Before(time.Now()) {
-		return "", "", "", "", false
-	}
-	email := m.recoveryEmails[token]
-	username := m.recoveryUsernames[token]
-	challenge := m.recoveryChallenges[token]
-	error := m.recoveryErrors[token]
-	return email, username, challenge, error, ok
-}
-
-func (m *inMemorySessionManager) SetAccountRecoveryEmail(token string, email string) error {
-	m.Lock()
-	defer m.Unlock()
-	m.recoveryEmails[token] = email
-	return nil
-}
-
-func (m *inMemorySessionManager) SetAccountRecoveryUsername(token string, username string) error {
-	m.Lock()
-	defer m.Unlock()
-	m.recoveryUsernames[token] = username
-	return nil
-}
-
-func (m *inMemorySessionManager) SetAccountRecoveryChallenge(token, challenge string) error {
-	m.Lock()
-	defer m.Unlock()
-	m.recoveryChallenges[token] = challenge
-	return nil
-}
-
-func (m *inMemorySessionManager) SetAccountRecoveryError(token string, errmsg string) {
-	m.Lock()
-	defer m.Unlock()
-	m.recoveryErrors[token] = errmsg
 }

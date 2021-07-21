@@ -1,4 +1,4 @@
-package main
+package model
 
 type Product struct {
 	ID, Name string

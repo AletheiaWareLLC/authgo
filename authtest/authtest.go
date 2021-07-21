@@ -2,6 +2,8 @@ package authtest
 
 import (
 	"aletheiaware.com/authgo"
+	"aletheiaware.com/authgo/account"
+	"aletheiaware.com/authgo/session"
 	"github.com/stretchr/testify/assert"
 	"testing"
 )
@@ -14,8 +16,8 @@ const (
 
 func NewAuthenticator(t *testing.T) authgo.Authenticator {
 	t.Helper()
-	am := authgo.NewInMemoryAccountManager()
-	sm := authgo.NewInMemorySessionManager()
+	am := account.NewInMemoryManager()
+	sm := session.NewInMemoryManager()
 	ev := NewEmailVerifier()
 	return authgo.NewAuthenticator(am, sm, ev)
 }

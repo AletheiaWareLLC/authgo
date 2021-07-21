@@ -8,38 +8,32 @@
         <title>Example</title>
     </head>
     <body>
-        <h1>Change Password</h1>
+        <h1>Account Recovery Email Verification</h1>
 
         {{if ne .Error ""}}
             <p class="error">{{.Error}}</p>
+        {{else}}
+            <p style="text-align: center;">Your username is {{.Username}}</p>
         {{end}}
 
-        <p>Choose and confirm a new password</p>
+        <p style="text-align: center;">Verify your account by entering the verification code that was sent to your email address.</p>
 
-        <form action="/account-password" method="post" id="account-password-form">
+        <form action="/account-recovery-verification" method="post" id="account-recovery-verification-form">
             <!-- TODO(v2) add CSRF token
             <input type="hidden" id="token" name="token" value="{ { .Token } }" />
             -->
             <table class="center">
                 <tr>
                     <td class="leftcolumn">
-                        <label for="password">Password</label>
+                        <label for="verification">Verification Code</label>
                     </td>
                     <td class="rightcolumn">
-                        <input type="password" id="password" name="password" autocomplete="new-password" />
-                    </td>
-                </tr>
-                <tr>
-                    <td class="leftcolumn">
-                        <label for="confirmation">Confirm Password</label>
-                    </td>
-                    <td class="rightcolumn">
-                        <input type="password" id="confirmation" name="confirmation" autocomplete="new-password" />
+                        <input type="text" id="verification" name="verification" autocomplete="one-time-code" />
                     </td>
                 </tr>
                 <tr>
                     <td colspan="2" style="text-align:center;">
-                        <input type="submit" value="Change Password" />
+                        <input type="submit" value="Recover Account" />
                     </td>
                 </tr>
             </table>

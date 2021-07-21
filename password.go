@@ -36,11 +36,9 @@ func MatchPasswords(password, confirmation []byte) error {
 }
 
 func GeneratePasswordHash(password []byte) ([]byte, error) {
-	bytes, err := bcrypt.GenerateFromPassword(password, 14)
-	return bytes, err
+	return bcrypt.GenerateFromPassword(password, 14)
 }
 
 func CheckPasswordHash(hash, password []byte) bool {
-	err := bcrypt.CompareHashAndPassword(hash, password)
-	return err == nil
+	return bcrypt.CompareHashAndPassword(hash, password) == nil
 }
