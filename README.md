@@ -17,7 +17,7 @@ go get aletheiaware.com/authgo
 // In a test environment use an In-Memory Account Manager.
 am := authgo.NewInMemoryAccountManager()
 
-// In production implement the Account Manager interface that connects to your database.
+// In production implement the Account Manager interface to connect to your database.
 am := NewDatabaseAccountManager(db)
 ```
 
@@ -26,7 +26,7 @@ am := NewDatabaseAccountManager(db)
 // In a test environment use an In-Memory Session Manager.
 sm := authgo.NewInMemorySessionManager()
 
-// In production implement the Session Manager interface that connects to your database.
+// In production implement the Session Manager interface to connect to your database.
 am := NewDatabaseSessionManager(db)
 ```
 
@@ -36,7 +36,7 @@ am := NewDatabaseSessionManager(db)
 ev := authtest.NewEmailVerifier()
 
 // In production use an SMTP service to send the verification code.
-ev := authgo.NewSmtpEmailVerifier("smtp-relay.gmail.com:25", "noreply@example.com", templates)
+ev := authgo.NewSmtpEmailVerifier("smtp-relay.gmail.com:25", "noreply@example.com", templates.Lookup("email-verification.go.html"))
 ```
 
 5. Create the Authenticator.
