@@ -7,10 +7,6 @@ import (
 )
 
 const (
-	SESSION_SIGN_IN_COOKIE           = "sign-in-session"
-	SESSION_SIGN_UP_COOKIE           = "sign-up-session"
-	SESSION_ACCOUNT_PASSWORD_COOKIE  = "account-password-session"
-	SESSION_ACCOUNT_RECOVERY_COOKIE  = "account-recovery-session"
 	SESSION_TOKEN_LENGTH             = 16
 	SESSION_SIGN_IN_TIMEOUT          = 30 * time.Minute
 	SESSION_SIGN_UP_TIMEOUT          = 10 * time.Minute
@@ -45,22 +41,6 @@ type SessionManager interface {
 
 func NewSessionToken() (string, error) {
 	return cryptogo.RandomString(SESSION_TOKEN_LENGTH)
-}
-
-func NewSignUpCookie(token string) *http.Cookie {
-	return NewCookie(SESSION_SIGN_UP_COOKIE, token, SESSION_SIGN_UP_TIMEOUT)
-}
-
-func NewSignInCookie(token string) *http.Cookie {
-	return NewCookie(SESSION_SIGN_IN_COOKIE, token, SESSION_SIGN_IN_TIMEOUT)
-}
-
-func NewAccountPasswordCookie(token string) *http.Cookie {
-	return NewCookie(SESSION_ACCOUNT_PASSWORD_COOKIE, token, SESSION_ACCOUNT_PASSWORD_TIMEOUT)
-}
-
-func NewAccountRecoveryCookie(token string) *http.Cookie {
-	return NewCookie(SESSION_ACCOUNT_RECOVERY_COOKIE, token, SESSION_ACCOUNT_RECOVERY_TIMEOUT)
 }
 
 func CurrentSignUp(m SessionManager, r *http.Request) (string, string, string, string, string) {
