@@ -4,14 +4,14 @@ import (
 	"aletheiaware.com/authgo"
 	"aletheiaware.com/authgo/cmd/example/model"
 	"aletheiaware.com/authgo/redirect"
-	"aletheiaware.com/netgo"
+	"aletheiaware.com/netgo/handler"
 	"html/template"
 	"log"
 	"net/http"
 )
 
 func AttachProductsHandler(m *http.ServeMux, a authgo.Authenticator, p model.ProductManager, ts *template.Template) {
-	m.Handle("/products", netgo.LoggingHandler(Products(a, p, ts)))
+	m.Handle("/products", handler.Log(Products(a, p, ts)))
 }
 
 func Products(a authgo.Authenticator, p model.ProductManager, ts *template.Template) http.Handler {

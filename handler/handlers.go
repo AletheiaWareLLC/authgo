@@ -2,18 +2,18 @@ package handler
 
 import (
 	"aletheiaware.com/authgo"
-	"aletheiaware.com/netgo"
+	"aletheiaware.com/netgo/handler"
 	"html/template"
 	"net/http"
 )
 
 func AttachHandlers(a authgo.Authenticator, m *http.ServeMux, ts *template.Template) {
-	m.Handle("/account", netgo.LoggingHandler(Account(a, ts)))
-	m.Handle("/account-password", netgo.LoggingHandler(AccountPassword(a, ts)))
-	m.Handle("/account-recovery", netgo.LoggingHandler(AccountRecovery(a, ts)))
-	m.Handle("/account-recovery-verification", netgo.LoggingHandler(AccountRecoveryVerification(a, ts)))
-	m.Handle("/sign-in", netgo.LoggingHandler(SignIn(a, ts)))
-	m.Handle("/sign-out", netgo.LoggingHandler(SignOut(a, ts)))
-	m.Handle("/sign-up", netgo.LoggingHandler(SignUp(a, ts)))
-	m.Handle("/sign-up-verification", netgo.LoggingHandler(SignUpVerification(a, ts)))
+	m.Handle("/account", handler.Log(Account(a, ts)))
+	m.Handle("/account-password", handler.Log(AccountPassword(a, ts)))
+	m.Handle("/account-recovery", handler.Log(AccountRecovery(a, ts)))
+	m.Handle("/account-recovery-verification", handler.Log(AccountRecoveryVerification(a, ts)))
+	m.Handle("/sign-in", handler.Log(SignIn(a, ts)))
+	m.Handle("/sign-out", handler.Log(SignOut(a, ts)))
+	m.Handle("/sign-up", handler.Log(SignUp(a, ts)))
+	m.Handle("/sign-up-verification", handler.Log(SignUpVerification(a, ts)))
 }

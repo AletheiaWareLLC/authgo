@@ -8,6 +8,7 @@ import (
 	"aletheiaware.com/authgo/cmd/example/model"
 	authhandler "aletheiaware.com/authgo/handler"
 	"aletheiaware.com/authgo/session"
+	nethandler "aletheiaware.com/netgo/handler"
 	"crypto/tls"
 	"embed"
 	"html/template"
@@ -25,14 +26,14 @@ func main() {
 	// Create Multiplexer
 	mux := http.NewServeMux()
 
-	handler.AttachHealthHandler(mux)
+	nethandler.AttachHealthHandler(mux)
 
 	// Handle Static Assets
 	staticFS, err := fs.Sub(embeddedFS, path.Join("assets", "html", "static"))
 	if err != nil {
 		log.Fatal(err)
 	}
-	handler.AttachStaticHandler(mux, staticFS)
+	nethandler.AttachStaticFSHandler(mux, staticFS)
 
 	// Parse Templates
 	templateFS, err := fs.Sub(embeddedFS, path.Join("assets", "html", "template"))

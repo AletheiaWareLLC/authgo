@@ -169,6 +169,12 @@ func SignUpVerification(a authgo.Authenticator, ts *template.Template) http.Hand
 				return
 			}
 
+			if err := sm.SetSignInAuthenticated(token, true); err != nil {
+				log.Println(err)
+				http.Error(w, http.StatusText(http.StatusNotFound), http.StatusNotFound)
+				return
+			}
+
 			http.SetCookie(w, authgo.NewSignInCookie(token))
 
 			redirect.Index(w, r)

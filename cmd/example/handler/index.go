@@ -2,15 +2,16 @@ package handler
 
 import (
 	"aletheiaware.com/authgo"
-	"aletheiaware.com/netgo"
+	"aletheiaware.com/netgo/handler"
 	"html/template"
 	"log"
 	"net/http"
 )
 
 func AttachIndexHandler(m *http.ServeMux, a authgo.Authenticator, ts *template.Template) {
-	m.Handle("/", netgo.LoggingHandler(Index(a, ts)))
+	m.Handle("/", handler.Log(Index(a, ts)))
 }
+
 func Index(a authgo.Authenticator, ts *template.Template) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		data := struct {

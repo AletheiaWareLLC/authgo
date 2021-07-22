@@ -35,6 +35,8 @@ func SignIn(t *testing.T, a authgo.Authenticator) (string, *authgo.Account) {
 	assert.Nil(t, err)
 	account, err := a.AccountManager().Authenticate(TEST_USERNAME, []byte(TEST_PASSWORD))
 	assert.Nil(t, err)
+	err = sm.SetSignInAuthenticated(token, true)
+	assert.Nil(t, err)
 	return token, account
 }
 
