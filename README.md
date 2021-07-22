@@ -12,25 +12,16 @@ authgo is simple to setup and offers complete control of the HTML templates and 
 go get aletheiaware.com/authgo
 ```
 
-2. Create the Account Manager.
+2. Create the Database.
 ```go
-// In a test environment use an In-Memory Account Manager.
-am := account.NewInMemoryManager()
+// In a test environment use an In-Memory Database.
+db := database.NewInMemoryDatabase()
 
-// In production implement the Account Manager interface to connect to your database.
-am := NewDatabaseAccountManager(db)
+// In production implement the Database interface to connect to your own database.
+db := NewSqlDatabase()
 ```
 
-3. Create the Session Manager.
-```go
-// In a test environment use an In-Memory Session Manager.
-sm := session.NewInMemoryManager()
-
-// In production implement the Session Manager interface to connect to your database.
-am := NewDatabaseSessionManager(db)
-```
-
-4. Create the Email Validator.
+3. Create the Email Validator.
 ```go
 // In a test environment use a mock verifier (code is always authtest.TEST_CHALLENGE)
 ev := authtest.NewEmailVerifier()
@@ -39,17 +30,17 @@ ev := authtest.NewEmailVerifier()
 ev := email.NewSmtpEmailVerifier("smtp-relay.gmail.com:25", "noreply@example.com", templates.Lookup("email-verification.go.html"))
 ```
 
-5. Create the Authenticator.
+4. Create the Authenticator.
 ```go
-auth := authgo.NewAuthenticator(am, sm, ev)
+auth := authgo.NewAuthenticator(db, ev)
 ```
 
-6. Attach the HTTP Handlers with the HTML templates.
+5. Attach the HTTP Handlers with the HTML templates.
 ```go
 handler.AttachHandlers(auth, mux, templates)
 ```
 
-7. Add Authentication Checks to your HTTP Handlers.
+6. Add Authentication Checks to your HTTP Handlers.
 ```go
 mux.Handle("/greeter", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
     account := auth.CurrentAccount(w, r)

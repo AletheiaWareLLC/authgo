@@ -15,7 +15,7 @@ import (
 	"testing/fstest"
 )
 
-func SignUpSignOutSignInAccount(t *testing.T, a func() authgo.Authenticator) {
+func SignUpSignOutSignInAccount(t *testing.T, a func(*testing.T) authgo.Authenticator) {
 	fs := fstest.MapFS{
 		"sign-up.go.html": {
 			Data: []byte(`{{.Error}}{{.Email}}{{.Username}}`),
@@ -36,7 +36,7 @@ func SignUpSignOutSignInAccount(t *testing.T, a func() authgo.Authenticator) {
 	tmpl, err := template.ParseFS(fs, "*.go.html")
 	assert.Nil(t, err)
 
-	auth := a()
+	auth := a(t)
 	mux := http.NewServeMux()
 	handler.AttachHandlers(auth, mux, tmpl)
 
@@ -51,7 +51,7 @@ func SignUpSignOutSignInAccount(t *testing.T, a func() authgo.Authenticator) {
 	assert.Empty(t, string(body))
 	cookies := result.Cookies()
 	assert.Equal(t, 1, len(cookies))
-	assert.Equal(t, authgo.SESSION_SIGN_UP_COOKIE, cookies[0].Name)
+	assert.Equal(t, authgo.COOKIE_SIGN_UP, cookies[0].Name)
 	values := url.Values{}
 	values.Add("email", authtest.TEST_EMAIL)
 	values.Add("username", authtest.TEST_USERNAME)
@@ -90,7 +90,7 @@ func SignUpSignOutSignInAccount(t *testing.T, a func() authgo.Authenticator) {
 	assert.Equal(t, http.StatusFound, result.StatusCode)
 	cookies = result.Cookies()
 	assert.Equal(t, 1, len(cookies))
-	assert.Equal(t, authgo.SESSION_SIGN_IN_COOKIE, cookies[0].Name)
+	assert.Equal(t, authgo.COOKIE_SIGN_IN, cookies[0].Name)
 	u, err = result.Location()
 	assert.Nil(t, err)
 	assert.Equal(t, "/", u.String())
@@ -126,7 +126,7 @@ func SignUpSignOutSignInAccount(t *testing.T, a func() authgo.Authenticator) {
 	assert.Empty(t, string(body))
 	cookies = result.Cookies()
 	assert.Equal(t, 1, len(cookies))
-	assert.Equal(t, authgo.SESSION_SIGN_IN_COOKIE, cookies[0].Name)
+	assert.Equal(t, authgo.COOKIE_SIGN_IN, cookies[0].Name)
 	reader = strings.NewReader("username=" + authtest.TEST_USERNAME + "&password=" + authtest.TEST_PASSWORD)
 	request = httptest.NewRequest(http.MethodPost, "/sign-in", reader)
 	request.Header.Set("Content-Type", "application/x-www-form-urlencoded")
@@ -154,7 +154,7 @@ func SignUpSignOutSignInAccount(t *testing.T, a func() authgo.Authenticator) {
 	assert.Equal(t, authtest.TEST_USERNAME, string(body))
 }
 
-func AccountPasswordSignOutSignInAccount(t *testing.T, a func() authgo.Authenticator) {
+func AccountPasswordSignOutSignInAccount(t *testing.T, a func(*testing.T) authgo.Authenticator) {
 	fs := fstest.MapFS{
 		"account.go.html": {
 			Data: []byte(`{{.Account.Username}}`),
@@ -172,9 +172,9 @@ func AccountPasswordSignOutSignInAccount(t *testing.T, a func() authgo.Authentic
 	tmpl, err := template.ParseFS(fs, "*.go.html")
 	assert.Nil(t, err)
 
-	auth := a()
+	auth := a(t)
 	authtest.NewTestAccount(t, auth)
-	assert.Nil(t, auth.AccountManager().SetEmailVerified(authtest.TEST_EMAIL, true))
+	assert.Nil(t, auth.SetEmailVerified(authtest.TEST_EMAIL, true))
 	mux := http.NewServeMux()
 	handler.AttachHandlers(auth, mux, tmpl)
 	token, _ := authtest.SignIn(t, auth)
@@ -182,7 +182,7 @@ func AccountPasswordSignOutSignInAccount(t *testing.T, a func() authgo.Authentic
 
 	// Account Password
 	request := httptest.NewRequest(http.MethodGet, "/account-password", nil)
-	request.AddCookie(authgo.NewSignInCookie(token))
+	request.AddCookie(authgo.NewSignInSessionCookie(token))
 	response := httptest.NewRecorder()
 	mux.ServeHTTP(response, request)
 	result := response.Result()
@@ -192,8 +192,8 @@ func AccountPasswordSignOutSignInAccount(t *testing.T, a func() authgo.Authentic
 	assert.Empty(t, string(body))
 	cookies := result.Cookies()
 	assert.Equal(t, 2, len(cookies))
-	assert.Equal(t, authgo.SESSION_SIGN_IN_COOKIE, cookies[0].Name)
-	assert.Equal(t, authgo.SESSION_ACCOUNT_PASSWORD_COOKIE, cookies[1].Name)
+	assert.Equal(t, authgo.COOKIE_SIGN_IN, cookies[0].Name)
+	assert.Equal(t, authgo.COOKIE_ACCOUNT_PASSWORD, cookies[1].Name)
 	values := url.Values{}
 	values.Add("password", newPassword)
 	values.Add("confirmation", newPassword)
@@ -208,7 +208,7 @@ func AccountPasswordSignOutSignInAccount(t *testing.T, a func() authgo.Authentic
 	assert.Equal(t, http.StatusFound, result.StatusCode)
 	cookies = result.Cookies()
 	assert.Equal(t, 1, len(cookies))
-	assert.Equal(t, authgo.SESSION_SIGN_IN_COOKIE, cookies[0].Name)
+	assert.Equal(t, authgo.COOKIE_SIGN_IN, cookies[0].Name)
 	u, err := result.Location()
 	assert.Nil(t, err)
 	assert.Equal(t, "/account", u.String())
@@ -244,7 +244,7 @@ func AccountPasswordSignOutSignInAccount(t *testing.T, a func() authgo.Authentic
 	assert.Empty(t, string(body))
 	cookies = result.Cookies()
 	assert.Equal(t, 1, len(cookies))
-	assert.Equal(t, authgo.SESSION_SIGN_IN_COOKIE, cookies[0].Name)
+	assert.Equal(t, authgo.COOKIE_SIGN_IN, cookies[0].Name)
 	reader = strings.NewReader("username=" + authtest.TEST_USERNAME + "&password=" + newPassword)
 	request = httptest.NewRequest(http.MethodPost, "/sign-in", reader)
 	request.Header.Set("Content-Type", "application/x-www-form-urlencoded")
@@ -272,7 +272,7 @@ func AccountPasswordSignOutSignInAccount(t *testing.T, a func() authgo.Authentic
 	assert.Equal(t, authtest.TEST_USERNAME, string(body))
 }
 
-func AccountRecoveryAccountPasswordAccount(t *testing.T, a func() authgo.Authenticator) {
+func AccountRecoveryAccountPasswordAccount(t *testing.T, a func(*testing.T) authgo.Authenticator) {
 	fs := fstest.MapFS{
 		"account.go.html": {
 			Data: []byte(`{{.Account.Username}}`),
@@ -290,7 +290,7 @@ func AccountRecoveryAccountPasswordAccount(t *testing.T, a func() authgo.Authent
 	tmpl, err := template.ParseFS(fs, "*.go.html")
 	assert.Nil(t, err)
 
-	auth := a()
+	auth := a(t)
 	authtest.NewTestAccount(t, auth)
 	mux := http.NewServeMux()
 	handler.AttachHandlers(auth, mux, tmpl)
@@ -307,7 +307,7 @@ func AccountRecoveryAccountPasswordAccount(t *testing.T, a func() authgo.Authent
 	assert.Empty(t, string(body))
 	cookies := result.Cookies()
 	assert.Equal(t, 1, len(cookies))
-	assert.Equal(t, authgo.SESSION_ACCOUNT_RECOVERY_COOKIE, cookies[0].Name)
+	assert.Equal(t, authgo.COOKIE_ACCOUNT_RECOVERY, cookies[0].Name)
 	values := url.Values{}
 	values.Add("email", authtest.TEST_EMAIL)
 	reader := strings.NewReader(values.Encode())
@@ -343,7 +343,7 @@ func AccountRecoveryAccountPasswordAccount(t *testing.T, a func() authgo.Authent
 	assert.Equal(t, http.StatusFound, result.StatusCode)
 	cookies = result.Cookies()
 	assert.Equal(t, 1, len(cookies))
-	assert.Equal(t, authgo.SESSION_SIGN_IN_COOKIE, cookies[0].Name)
+	assert.Equal(t, authgo.COOKIE_SIGN_IN, cookies[0].Name)
 	u, err = result.Location()
 	assert.Nil(t, err)
 	assert.Equal(t, "/account-password", u.String())
@@ -360,8 +360,8 @@ func AccountRecoveryAccountPasswordAccount(t *testing.T, a func() authgo.Authent
 	assert.Empty(t, string(body))
 	cookies = result.Cookies()
 	assert.Equal(t, 2, len(cookies))
-	assert.Equal(t, authgo.SESSION_SIGN_IN_COOKIE, cookies[0].Name)
-	assert.Equal(t, authgo.SESSION_ACCOUNT_PASSWORD_COOKIE, cookies[1].Name)
+	assert.Equal(t, authgo.COOKIE_SIGN_IN, cookies[0].Name)
+	assert.Equal(t, authgo.COOKIE_ACCOUNT_PASSWORD, cookies[1].Name)
 	values = url.Values{}
 	values.Add("password", newPassword)
 	values.Add("confirmation", newPassword)
@@ -376,7 +376,7 @@ func AccountRecoveryAccountPasswordAccount(t *testing.T, a func() authgo.Authent
 	assert.Equal(t, http.StatusFound, result.StatusCode)
 	cookies = result.Cookies()
 	assert.Equal(t, 1, len(cookies))
-	assert.Equal(t, authgo.SESSION_SIGN_IN_COOKIE, cookies[0].Name)
+	assert.Equal(t, authgo.COOKIE_SIGN_IN, cookies[0].Name)
 	u, err = result.Location()
 	assert.Nil(t, err)
 	assert.Equal(t, "/account", u.String())

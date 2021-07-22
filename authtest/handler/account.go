@@ -12,17 +12,17 @@ import (
 	"testing"
 )
 
-func Account(t *testing.T, a func() authgo.Authenticator) {
+func Account(t *testing.T, a func(*testing.T) authgo.Authenticator) {
 	tmpl, err := template.New("account.go.html").Parse(`{{.Account.Username}}`)
 	assert.Nil(t, err)
 	t.Run("Returns 200 When Signed In", func(t *testing.T) {
-		auth := a()
+		auth := a(t)
 		authtest.NewTestAccount(t, auth)
 		token, _ := authtest.SignIn(t, auth)
 		mux := http.NewServeMux()
 		handler.AttachHandlers(auth, mux, tmpl)
 		request := httptest.NewRequest(http.MethodGet, "/account", nil)
-		request.AddCookie(authgo.NewSignInCookie(token))
+		request.AddCookie(authgo.NewSignInSessionCookie(token))
 		response := httptest.NewRecorder()
 		mux.ServeHTTP(response, request)
 		result := response.Result()
@@ -32,7 +32,7 @@ func Account(t *testing.T, a func() authgo.Authenticator) {
 		assert.Equal(t, authtest.TEST_USERNAME, string(body))
 	})
 	t.Run("Redirects When Not Signed In", func(t *testing.T) {
-		auth := a()
+		auth := a(t)
 		mux := http.NewServeMux()
 		handler.AttachHandlers(auth, mux, tmpl)
 		request := httptest.NewRequest(http.MethodGet, "/account", nil)

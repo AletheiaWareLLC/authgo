@@ -10,28 +10,26 @@ import (
 )
 
 func AccountPassword(a authgo.Authenticator, ts *template.Template) http.Handler {
-	am := a.AccountManager()
-	sm := a.SessionManager()
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		account := a.CurrentAccount(w, r)
 		if account == nil {
 			redirect.SignIn(w, r)
 			return
 		}
-		token, username, errmsg := authgo.CurrentAccountPassword(sm, r)
-		// log.Println("CurrentAccountPassword", token, username, errmsg)
+		token, username, errmsg := a.CurrentAccountPasswordSession(r)
+		// log.Println("CurrentAccountPasswordSession", token, username, errmsg)
 		switch r.Method {
 		case "GET":
 			if token == "" {
-				t, err := sm.NewAccountPassword(account.Username)
-				// log.Println("NewAccountPassword", t, err)
+				t, err := a.NewAccountPasswordSession(account.Username)
+				// log.Println("NewAccountPasswordSession", t, err)
 				if err != nil {
 					log.Println(err)
 					http.Error(w, http.StatusText(http.StatusNotFound), http.StatusNotFound)
 					return
 				}
 				token = t
-				http.SetCookie(w, authgo.NewAccountPasswordCookie(token))
+				http.SetCookie(w, authgo.NewAccountPasswordSessionCookie(token))
 			}
 			data := struct {
 				Error string
@@ -47,7 +45,7 @@ func AccountPassword(a authgo.Authenticator, ts *template.Template) http.Handler
 				redirect.AccountPassword(w, r)
 				return
 			}
-			sm.SetAccountPasswordError(token, "")
+			a.SetAccountPasswordSessionError(token, "")
 
 			password := []byte(strings.TrimSpace(r.FormValue("password")))
 			confirmation := []byte(strings.TrimSpace(r.FormValue("confirmation")))
@@ -55,20 +53,20 @@ func AccountPassword(a authgo.Authenticator, ts *template.Template) http.Handler
 			// Check valid password and matching confirm
 			if err := authgo.ValidatePassword(password); err != nil {
 				log.Println(err)
-				sm.SetAccountPasswordError(token, err.Error())
+				a.SetAccountPasswordSessionError(token, err.Error())
 				redirect.AccountPassword(w, r)
 				return
 			}
 			if err := authgo.MatchPasswords(password, confirmation); err != nil {
 				log.Println(err)
-				sm.SetAccountPasswordError(token, err.Error())
+				a.SetAccountPasswordSessionError(token, err.Error())
 				redirect.AccountPassword(w, r)
 				return
 			}
 
-			if err := am.ChangePassword(username, password); err != nil {
+			if err := a.ChangePassword(username, password); err != nil {
 				log.Println(err)
-				sm.SetAccountPasswordError(token, err.Error())
+				a.SetAccountPasswordSessionError(token, err.Error())
 				redirect.AccountPassword(w, r)
 				return
 			}

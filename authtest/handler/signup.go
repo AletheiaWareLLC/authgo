@@ -14,17 +14,17 @@ import (
 	"testing"
 )
 
-func SignUp(t *testing.T, a func() authgo.Authenticator) {
+func SignUp(t *testing.T, a func(*testing.T) authgo.Authenticator) {
 	tmpl, err := template.New("sign-up.go.html").Parse(`{{.Error}}{{.Email}}{{.Username}}`)
 	assert.Nil(t, err)
 	t.Run("Redirects When Signed In", func(t *testing.T) {
-		auth := a()
+		auth := a(t)
 		mux := http.NewServeMux()
 		handler.AttachHandlers(auth, mux, tmpl)
 		authtest.NewTestAccount(t, auth)
 		token, _ := authtest.SignIn(t, auth)
 		request := httptest.NewRequest(http.MethodGet, "/sign-up", nil)
-		request.AddCookie(authgo.NewSignInCookie(token))
+		request.AddCookie(authgo.NewSignInSessionCookie(token))
 		response := httptest.NewRecorder()
 		mux.ServeHTTP(response, request)
 		result := response.Result()
@@ -34,7 +34,7 @@ func SignUp(t *testing.T, a func() authgo.Authenticator) {
 		assert.Equal(t, "/account", u.String())
 	})
 	t.Run("Returns 200 When Not Signed In", func(t *testing.T) {
-		auth := a()
+		auth := a(t)
 		mux := http.NewServeMux()
 		handler.AttachHandlers(auth, mux, tmpl)
 		request := httptest.NewRequest(http.MethodGet, "/sign-up", nil)
@@ -47,10 +47,10 @@ func SignUp(t *testing.T, a func() authgo.Authenticator) {
 		assert.Empty(t, string(body))
 		cookies := result.Cookies()
 		assert.Equal(t, 1, len(cookies))
-		assert.Equal(t, authgo.SESSION_SIGN_UP_COOKIE, cookies[0].Name)
+		assert.Equal(t, authgo.COOKIE_SIGN_UP, cookies[0].Name)
 	})
 	t.Run("Redirects After Sign Up", func(t *testing.T) {
-		auth := a()
+		auth := a(t)
 		mux := http.NewServeMux()
 		handler.AttachHandlers(auth, mux, tmpl)
 		request := httptest.NewRequest(http.MethodGet, "/sign-up", nil)
@@ -63,7 +63,7 @@ func SignUp(t *testing.T, a func() authgo.Authenticator) {
 		assert.Empty(t, string(body))
 		cookies := result.Cookies()
 		assert.Equal(t, 1, len(cookies))
-		assert.Equal(t, authgo.SESSION_SIGN_UP_COOKIE, cookies[0].Name)
+		assert.Equal(t, authgo.COOKIE_SIGN_UP, cookies[0].Name)
 		values := url.Values{}
 		values.Add("email", authtest.TEST_EMAIL)
 		values.Add("username", authtest.TEST_USERNAME)
@@ -80,7 +80,7 @@ func SignUp(t *testing.T, a func() authgo.Authenticator) {
 		u, err := result.Location()
 		assert.Nil(t, err)
 		assert.Equal(t, "/sign-up-verification", u.String())
-		email, username, challenge, errmsg, ok := auth.SessionManager().LookupSignUp(cookies[0].Value)
+		email, username, challenge, errmsg, ok := auth.LookupSignUpSession(cookies[0].Value)
 		assert.Equal(t, authtest.TEST_EMAIL, email)
 		assert.Equal(t, authtest.TEST_USERNAME, username)
 		assert.Equal(t, authtest.TEST_CHALLENGE, challenge)
@@ -105,7 +105,7 @@ func SignUp(t *testing.T, a func() authgo.Authenticator) {
 					"password":     authtest.TEST_PASSWORD,
 					"confirmation": authtest.TEST_PASSWORD,
 				},
-				result: authgo.ErrInvalidEmail.Error() + authtest.TEST_USERNAME,
+				result: authgo.ErrInvalidEmail.Error(),
 			},
 			"Email Invalid": {
 				form: map[string]string{
@@ -114,7 +114,7 @@ func SignUp(t *testing.T, a func() authgo.Authenticator) {
 					"password":     authtest.TEST_PASSWORD,
 					"confirmation": authtest.TEST_PASSWORD,
 				},
-				result: authgo.ErrInvalidEmail.Error() + "abc" + authtest.TEST_USERNAME,
+				result: authgo.ErrInvalidEmail.Error(),
 			},
 			"Email Already Registered": {
 				form: map[string]string{
@@ -132,7 +132,7 @@ func SignUp(t *testing.T, a func() authgo.Authenticator) {
 					"password":     authtest.TEST_PASSWORD,
 					"confirmation": authtest.TEST_PASSWORD,
 				},
-				result: authgo.ErrInvalidUsername.Error() + authtest.TEST_EMAIL + usernameShort,
+				result: authgo.ErrInvalidUsername.Error(),
 			},
 			"Username Too Long": {
 				form: map[string]string{
@@ -141,7 +141,7 @@ func SignUp(t *testing.T, a func() authgo.Authenticator) {
 					"password":     authtest.TEST_PASSWORD,
 					"confirmation": authtest.TEST_PASSWORD,
 				},
-				result: authgo.ErrInvalidUsername.Error() + authtest.TEST_EMAIL + usernameLong,
+				result: authgo.ErrInvalidUsername.Error(),
 			},
 			"Username Already Registered": {
 				form: map[string]string{
@@ -172,10 +172,10 @@ func SignUp(t *testing.T, a func() authgo.Authenticator) {
 			},
 		} {
 			t.Run(name, func(t *testing.T) {
-				auth := a()
+				auth := a(t)
 				mux := http.NewServeMux()
 				handler.AttachHandlers(auth, mux, tmpl)
-				_, err := auth.AccountManager().New(existingEmail, existingUsername, []byte(authtest.TEST_PASSWORD))
+				_, err := auth.NewAccount(existingEmail, existingUsername, []byte(authtest.TEST_PASSWORD))
 				assert.Nil(t, err)
 				request := httptest.NewRequest(http.MethodGet, "/sign-up", nil)
 				response := httptest.NewRecorder()
@@ -187,7 +187,7 @@ func SignUp(t *testing.T, a func() authgo.Authenticator) {
 				assert.Empty(t, string(body))
 				cookies := result.Cookies()
 				assert.Equal(t, 1, len(cookies))
-				assert.Equal(t, authgo.SESSION_SIGN_UP_COOKIE, cookies[0].Name)
+				assert.Equal(t, authgo.COOKIE_SIGN_UP, cookies[0].Name)
 				values := url.Values{}
 				for k, v := range tt.form {
 					values.Add(k, v)
@@ -219,18 +219,18 @@ func SignUp(t *testing.T, a func() authgo.Authenticator) {
 	})
 }
 
-func SignUpVerification(t *testing.T, a func() authgo.Authenticator) {
+func SignUpVerification(t *testing.T, a func(*testing.T) authgo.Authenticator) {
 	tmpl, err := template.New("sign-up-verification.go.html").Parse(`{{.Error}}`)
 	assert.Nil(t, err)
 	t.Run("Returns 200 When Signed Up", func(t *testing.T) {
-		auth := a()
+		auth := a(t)
 		mux := http.NewServeMux()
 		handler.AttachHandlers(auth, mux, tmpl)
 		authtest.NewTestAccount(t, auth)
-		token, err := auth.SessionManager().NewSignUp()
+		token, err := auth.NewSignUpSession()
 		assert.Nil(t, err)
 		request := httptest.NewRequest(http.MethodGet, "/sign-up-verification", nil)
-		request.AddCookie(authgo.NewSignUpCookie(token))
+		request.AddCookie(authgo.NewSignUpSessionCookie(token))
 		response := httptest.NewRecorder()
 		mux.ServeHTTP(response, request)
 		result := response.Result()
@@ -240,7 +240,7 @@ func SignUpVerification(t *testing.T, a func() authgo.Authenticator) {
 		assert.Empty(t, string(body))
 	})
 	t.Run("Redirects When Not Signed Up", func(t *testing.T) {
-		auth := a()
+		auth := a(t)
 		mux := http.NewServeMux()
 		handler.AttachHandlers(auth, mux, tmpl)
 		request := httptest.NewRequest(http.MethodGet, "/sign-up-verification", nil)
@@ -253,49 +253,47 @@ func SignUpVerification(t *testing.T, a func() authgo.Authenticator) {
 		assert.Equal(t, "/sign-up", u.String())
 	})
 	t.Run("Redirects After Sign Up Verification", func(t *testing.T) {
-		auth := a()
+		auth := a(t)
 		mux := http.NewServeMux()
 		handler.AttachHandlers(auth, mux, tmpl)
 		authtest.NewTestAccount(t, auth)
-		sm := auth.SessionManager()
-		token, err := sm.NewSignUp()
+		token, err := auth.NewSignUpSession()
 		assert.Nil(t, err)
-		err = sm.SetSignUpIdentity(token, authtest.TEST_EMAIL, authtest.TEST_USERNAME)
+		err = auth.SetSignUpSessionIdentity(token, authtest.TEST_EMAIL, authtest.TEST_USERNAME)
 		assert.Nil(t, err)
-		err = sm.SetSignUpChallenge(token, authtest.TEST_CHALLENGE)
+		err = auth.SetSignUpSessionChallenge(token, authtest.TEST_CHALLENGE)
 		assert.Nil(t, err)
 		values := url.Values{}
 		values.Add("verification", authtest.TEST_CHALLENGE)
 		reader := strings.NewReader(values.Encode())
 		request := httptest.NewRequest(http.MethodPost, "/sign-up-verification", reader)
 		request.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-		request.AddCookie(authgo.NewSignUpCookie(token))
+		request.AddCookie(authgo.NewSignUpSessionCookie(token))
 		response := httptest.NewRecorder()
 		mux.ServeHTTP(response, request)
 		result := response.Result()
 		assert.Equal(t, http.StatusFound, result.StatusCode)
 		cookies := result.Cookies()
 		assert.Equal(t, 1, len(cookies))
-		assert.Equal(t, authgo.SESSION_SIGN_IN_COOKIE, cookies[0].Name)
+		assert.Equal(t, authgo.COOKIE_SIGN_IN, cookies[0].Name)
 		u, err := result.Location()
 		assert.Nil(t, err)
 		assert.Equal(t, "/", u.String())
-		username, authenticated, errmsg, ok := sm.LookupSignIn(cookies[0].Value)
+		username, authenticated, errmsg, ok := auth.LookupSignInSession(cookies[0].Value)
 		assert.Equal(t, authtest.TEST_USERNAME, username)
 		assert.True(t, authenticated)
 		assert.Empty(t, errmsg)
 		assert.True(t, ok)
-		assert.True(t, auth.AccountManager().IsEmailVerified(authtest.TEST_EMAIL))
+		assert.True(t, auth.IsEmailVerified(authtest.TEST_EMAIL))
 	})
 	t.Run("Redirects When Challenge Is Incorrect", func(t *testing.T) {
-		auth := a()
+		auth := a(t)
 		mux := http.NewServeMux()
 		handler.AttachHandlers(auth, mux, tmpl)
-		sm := auth.SessionManager()
-		token, err := sm.NewSignUp()
+		token, err := auth.NewSignUpSession()
 		assert.Nil(t, err)
-		cookie := authgo.NewSignUpCookie(token)
-		err = sm.SetSignUpChallenge(token, authtest.TEST_CHALLENGE)
+		cookie := authgo.NewSignUpSessionCookie(token)
+		err = auth.SetSignUpSessionChallenge(token, authtest.TEST_CHALLENGE)
 		assert.Nil(t, err)
 		values := url.Values{}
 		values.Add("verification", "1234abcd")

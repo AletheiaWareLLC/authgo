@@ -2,12 +2,11 @@ package main
 
 import (
 	"aletheiaware.com/authgo"
-	"aletheiaware.com/authgo/account"
 	"aletheiaware.com/authgo/authtest"
 	"aletheiaware.com/authgo/cmd/example/handler"
 	"aletheiaware.com/authgo/cmd/example/model"
+	"aletheiaware.com/authgo/database"
 	authhandler "aletheiaware.com/authgo/handler"
-	"aletheiaware.com/authgo/session"
 	nethandler "aletheiaware.com/netgo/handler"
 	"crypto/tls"
 	"embed"
@@ -45,26 +44,23 @@ func main() {
 		log.Fatal(err)
 	}
 
-	// Create Account Manager
-	am := account.NewInMemoryManager()
-
-	// Add Demo Account
-	if _, err := am.New(authtest.TEST_EMAIL, authtest.TEST_USERNAME, []byte(authtest.TEST_PASSWORD)); err != nil {
-		log.Fatal(err)
-	}
-	am.SetEmailVerified(authtest.TEST_EMAIL, true)
-
-	// Create a Session Manager
-	sm := session.NewInMemoryManager()
+	// Create Database
+	db := database.NewInMemoryDatabase()
 
 	// Create Email Verifier
 	ev := authtest.NewEmailVerifier()
 
 	// Create an Authenticator
-	a := authgo.NewAuthenticator(am, sm, ev)
+	auth := authgo.NewAuthenticator(db, ev)
+
+	// Add Demo Account
+	if _, err := auth.NewAccount(authtest.TEST_EMAIL, authtest.TEST_USERNAME, []byte(authtest.TEST_PASSWORD)); err != nil {
+		log.Fatal(err)
+	}
+	auth.SetEmailVerified(authtest.TEST_EMAIL, true)
 
 	// Attach Authentication Handlers
-	authhandler.AttachHandlers(a, mux, templates)
+	authhandler.AttachHandlers(auth, mux, templates)
 
 	// Create Product Manager
 	products := model.NewInMemoryProductManager()
@@ -80,13 +76,13 @@ func main() {
 	})
 
 	// Handle All Products
-	handler.AttachProductsHandler(mux, a, products, templates)
+	handler.AttachProductsHandler(mux, auth, products, templates)
 
 	// Handle Individual Product
-	handler.AttachProductHandler(mux, a, products, templates)
+	handler.AttachProductHandler(mux, auth, products, templates)
 
 	// Handle Index
-	handler.AttachIndexHandler(mux, a, templates)
+	handler.AttachIndexHandler(mux, auth, templates)
 
 	// Start Server
 	if authgo.Secure() {

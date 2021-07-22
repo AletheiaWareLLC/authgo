@@ -9,11 +9,9 @@ import (
 )
 
 func SignOut(a authgo.Authenticator, ts *template.Template) http.Handler {
-	am := a.AccountManager()
-	sm := a.SessionManager()
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		token, username, authenticated, errmsg := authgo.CurrentSignIn(sm, r)
-		// log.Println("CurrentSignIn", token, username, authenticated, errmsg)
+		token, username, authenticated, errmsg := a.CurrentSignInSession(r)
+		// log.Println("CurrentSignInSession", token, username, authenticated, errmsg)
 		if token == "" || username == "" || !authenticated {
 			// Not signed in
 			redirect.Index(w, r)
@@ -27,7 +25,7 @@ func SignOut(a authgo.Authenticator, ts *template.Template) http.Handler {
 			}{
 				Error: errmsg,
 			}
-			account, err := am.Lookup(username)
+			account, err := a.LookupAccount(username)
 			if err == nil {
 				data.Account = account
 			}
@@ -36,8 +34,8 @@ func SignOut(a authgo.Authenticator, ts *template.Template) http.Handler {
 				return
 			}
 		case "POST":
-			sm.SetSignInError(token, "")
-			if err := sm.SetSignInAuthenticated(token, false); err != nil {
+			a.SetSignInSessionError(token, "")
+			if err := a.SetSignInSessionAuthenticated(token, false); err != nil {
 				log.Println(err)
 			}
 			redirect.Index(w, r)

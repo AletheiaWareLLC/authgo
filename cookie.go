@@ -6,10 +6,10 @@ import (
 )
 
 const (
-	SESSION_SIGN_IN_COOKIE          = "sign-in-session"
-	SESSION_SIGN_UP_COOKIE          = "sign-up-session"
-	SESSION_ACCOUNT_PASSWORD_COOKIE = "account-password-session"
-	SESSION_ACCOUNT_RECOVERY_COOKIE = "account-recovery-session"
+	COOKIE_SIGN_IN          = "sign-in"
+	COOKIE_SIGN_UP          = "sign-up"
+	COOKIE_ACCOUNT_PASSWORD = "account-password"
+	COOKIE_ACCOUNT_RECOVERY = "account-recovery"
 )
 
 func NewCookie(name, value string, timeout time.Duration) *http.Cookie {
@@ -23,18 +23,18 @@ func NewCookie(name, value string, timeout time.Duration) *http.Cookie {
 	}
 }
 
-func NewSignUpCookie(token string) *http.Cookie {
-	return NewCookie(SESSION_SIGN_UP_COOKIE, token, SESSION_SIGN_UP_TIMEOUT)
+func NewSignUpSessionCookie(token string) *http.Cookie {
+	return NewCookie(COOKIE_SIGN_UP, token, SESSION_SIGN_UP_TIMEOUT)
 }
 
-func NewSignInCookie(token string) *http.Cookie {
-	return NewCookie(SESSION_SIGN_IN_COOKIE, token, SESSION_SIGN_IN_TIMEOUT)
+func NewSignInSessionCookie(token string) *http.Cookie {
+	return NewCookie(COOKIE_SIGN_IN, token, SESSION_SIGN_IN_TIMEOUT)
 }
 
-func NewAccountPasswordCookie(token string) *http.Cookie {
-	return NewCookie(SESSION_ACCOUNT_PASSWORD_COOKIE, token, SESSION_ACCOUNT_PASSWORD_TIMEOUT)
+func NewAccountPasswordSessionCookie(token string) *http.Cookie {
+	return NewCookie(COOKIE_ACCOUNT_PASSWORD, token, SESSION_ACCOUNT_PASSWORD_TIMEOUT)
 }
 
-func NewAccountRecoveryCookie(token string) *http.Cookie {
-	return NewCookie(SESSION_ACCOUNT_RECOVERY_COOKIE, token, SESSION_ACCOUNT_RECOVERY_TIMEOUT)
+func NewAccountRecoverySessionCookie(token string) *http.Cookie {
+	return NewCookie(COOKIE_ACCOUNT_RECOVERY, token, SESSION_ACCOUNT_RECOVERY_TIMEOUT)
 }

@@ -10,24 +10,22 @@ import (
 )
 
 func SignIn(a authgo.Authenticator, ts *template.Template) http.Handler {
-	am := a.AccountManager()
-	sm := a.SessionManager()
 	ev := a.EmailVerifier()
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		token, username, authenticated, errmsg := authgo.CurrentSignIn(sm, r)
-		// log.Println("CurrentSignIn", token, username, authenticated, errmsg)
+		token, username, authenticated, errmsg := a.CurrentSignInSession(r)
+		// log.Println("CurrentSignInSession", token, username, authenticated, errmsg)
 		switch r.Method {
 		case "GET":
 			if token == "" {
-				t, err := sm.NewSignIn("")
-				// log.Println("NewSignIn", t, err)
+				t, err := a.NewSignInSession("")
+				// log.Println("NewSignInSession", t, err)
 				if err != nil {
 					log.Println(err)
 					http.Error(w, http.StatusText(http.StatusNotFound), http.StatusNotFound)
 					return
 				}
 				token = t
-				http.SetCookie(w, authgo.NewSignInCookie(token))
+				http.SetCookie(w, authgo.NewSignInSessionCookie(token))
 			}
 			if authenticated {
 				// Already signed in
@@ -50,60 +48,60 @@ func SignIn(a authgo.Authenticator, ts *template.Template) http.Handler {
 				redirect.SignIn(w, r)
 				return
 			}
-			sm.SetSignInError(token, "")
+			a.SetSignInSessionError(token, "")
 
 			username := strings.TrimSpace(r.FormValue("username"))
 			password := []byte(strings.TrimSpace(r.FormValue("password")))
 
-			if err := sm.SetSignInUsername(token, username); err != nil {
+			if err := a.SetSignInSessionUsername(token, username); err != nil {
 				log.Println(err)
-				sm.SetSignInError(token, err.Error())
+				a.SetSignInSessionError(token, err.Error())
 				redirect.SignIn(w, r)
 				return
 			}
 
-			account, err := am.Authenticate(username, password)
+			account, err := a.AuthenticateAccount(username, password)
 			// log.Println("AuthenticateAccount", account, err)
 			if err != nil {
 				log.Println(err)
-				sm.SetSignInError(token, err.Error())
+				a.SetSignInSessionError(token, err.Error())
 				redirect.SignIn(w, r)
 				return
 			}
 
-			if err := sm.SetSignInAuthenticated(token, true); err != nil {
+			if err := a.SetSignInSessionAuthenticated(token, true); err != nil {
 				log.Println(err)
-				sm.SetSignInError(token, err.Error())
+				a.SetSignInSessionError(token, err.Error())
 				redirect.SignIn(w, r)
 				return
 			}
 
-			if !am.IsEmailVerified(account.Email) {
-				token, err := sm.NewSignUp()
-				// log.Println("NewSignUp", token, err)
+			if !a.IsEmailVerified(account.Email) {
+				token, err := a.NewSignUpSession()
+				// log.Println("NewSignUpSession", token, err)
 				if err != nil {
 					log.Println(err)
 					http.Error(w, http.StatusText(http.StatusNotFound), http.StatusNotFound)
 					return
 				}
-				if err := sm.SetSignUpIdentity(token, account.Email, account.Username); err != nil {
+				if err := a.SetSignUpSessionIdentity(token, account.Email, account.Username); err != nil {
 					log.Println(err)
 					http.Error(w, http.StatusText(http.StatusNotFound), http.StatusNotFound)
 				}
 
-				http.SetCookie(w, authgo.NewSignUpCookie(token))
+				http.SetCookie(w, authgo.NewSignUpSessionCookie(token))
 
 				code, err := ev.VerifyEmail(account.Email)
 				// log.Println("VerifyEmail", code, err)
 				if err != nil {
 					log.Println(err)
-					sm.SetSignUpError(token, err.Error())
+					a.SetSignUpSessionError(token, err.Error())
 					redirect.SignIn(w, r)
 					return
 				}
-				if err := sm.SetSignUpChallenge(token, code); err != nil {
+				if err := a.SetSignUpSessionChallenge(token, code); err != nil {
 					log.Println(err)
-					sm.SetSignUpError(token, err.Error())
+					a.SetSignUpSessionError(token, err.Error())
 					redirect.SignIn(w, r)
 					return
 				}

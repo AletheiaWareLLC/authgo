@@ -13,7 +13,7 @@ import (
 )
 
 func TestIndex(t *testing.T) {
-	tmpl, err := template.New("index.go.html").Parse(`{{with .Account}}Hello {{.Username}}{{end}}`)
+	tmpl, err := template.New("index.go.html").Parse(`{{with .Account}}{{.Username}}{{end}}`)
 	assert.Nil(t, err)
 	t.Run("Returns 200 When Signed In", func(t *testing.T) {
 		a := authtest.NewAuthenticator(t)
@@ -22,14 +22,14 @@ func TestIndex(t *testing.T) {
 		mux := http.NewServeMux()
 		handler.AttachIndexHandler(mux, a, tmpl)
 		request := httptest.NewRequest(http.MethodGet, "/", nil)
-		request.AddCookie(authgo.NewSignInCookie(token))
+		request.AddCookie(authgo.NewSignInSessionCookie(token))
 		response := httptest.NewRecorder()
 		mux.ServeHTTP(response, request)
 		result := response.Result()
 		body, err := io.ReadAll(result.Body)
 		assert.Nil(t, err)
 		assert.Equal(t, http.StatusOK, result.StatusCode)
-		assert.Equal(t, "Hello "+authtest.TEST_USERNAME, string(body))
+		assert.Equal(t, authtest.TEST_USERNAME, string(body))
 	})
 	t.Run("Returns 200 When Not Signed In", func(t *testing.T) {
 		a := authtest.NewAuthenticator(t)
@@ -42,6 +42,6 @@ func TestIndex(t *testing.T) {
 		body, err := io.ReadAll(result.Body)
 		assert.Nil(t, err)
 		assert.Equal(t, http.StatusOK, result.StatusCode)
-		assert.Equal(t, "", string(body))
+		assert.Empty(t, string(body))
 	})
 }
