@@ -37,7 +37,7 @@ auth := authgo.NewAuthenticator(db, ev)
 
 5. Attach the HTTP Handlers with the HTML templates.
 ```go
-handler.AttachHandlers(auth, mux, templates)
+handler.AttachHandlers(mux, auth, templates)
 ```
 
 6. Add Authentication Checks to your HTTP Handlers.
@@ -45,7 +45,7 @@ handler.AttachHandlers(auth, mux, templates)
 mux.Handle("/greeter", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
     account := auth.CurrentAccount(w, r)
     if account == nil {
-        authgo.RedirectSignIn(w, r)
+        redirect.SignIn(w, r)
         return
     }
     // Request is authorized, greet the user

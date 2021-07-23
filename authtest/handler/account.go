@@ -20,7 +20,7 @@ func Account(t *testing.T, a func(*testing.T) authgo.Authenticator) {
 		authtest.NewTestAccount(t, auth)
 		token, _ := authtest.SignIn(t, auth)
 		mux := http.NewServeMux()
-		handler.AttachHandlers(auth, mux, tmpl)
+		handler.AttachHandlers(mux, auth, tmpl)
 		request := httptest.NewRequest(http.MethodGet, "/account", nil)
 		request.AddCookie(authgo.NewSignInSessionCookie(token))
 		response := httptest.NewRecorder()
@@ -34,7 +34,7 @@ func Account(t *testing.T, a func(*testing.T) authgo.Authenticator) {
 	t.Run("Redirects When Not Signed In", func(t *testing.T) {
 		auth := a(t)
 		mux := http.NewServeMux()
-		handler.AttachHandlers(auth, mux, tmpl)
+		handler.AttachHandlers(mux, auth, tmpl)
 		request := httptest.NewRequest(http.MethodGet, "/account", nil)
 		response := httptest.NewRecorder()
 		mux.ServeHTTP(response, request)

@@ -60,7 +60,7 @@ func main() {
 	auth.SetEmailVerified(authtest.TEST_EMAIL, true)
 
 	// Attach Authentication Handlers
-	authhandler.AttachHandlers(auth, mux, templates)
+	authhandler.AttachHandlers(mux, auth, templates)
 
 	// Create Product Manager
 	products := model.NewInMemoryProductManager()

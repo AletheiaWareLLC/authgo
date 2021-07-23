@@ -7,7 +7,7 @@ import (
 	"net/http"
 )
 
-func AttachHandlers(a authgo.Authenticator, m *http.ServeMux, ts *template.Template) {
+func AttachHandlers(m *http.ServeMux, a authgo.Authenticator, ts *template.Template) {
 	m.Handle("/account", handler.Log(Account(a, ts)))
 	m.Handle("/account-password", handler.Log(AccountPassword(a, ts)))
 	m.Handle("/account-recovery", handler.Log(AccountRecovery(a, ts)))

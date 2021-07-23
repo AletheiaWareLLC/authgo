@@ -38,7 +38,7 @@ func SignUpSignOutSignInAccount(t *testing.T, a func(*testing.T) authgo.Authenti
 
 	auth := a(t)
 	mux := http.NewServeMux()
-	handler.AttachHandlers(auth, mux, tmpl)
+	handler.AttachHandlers(mux, auth, tmpl)
 
 	// Sign Up
 	request := httptest.NewRequest(http.MethodGet, "/sign-up", nil)
@@ -176,7 +176,7 @@ func AccountPasswordSignOutSignInAccount(t *testing.T, a func(*testing.T) authgo
 	authtest.NewTestAccount(t, auth)
 	assert.Nil(t, auth.SetEmailVerified(authtest.TEST_EMAIL, true))
 	mux := http.NewServeMux()
-	handler.AttachHandlers(auth, mux, tmpl)
+	handler.AttachHandlers(mux, auth, tmpl)
 	token, _ := authtest.SignIn(t, auth)
 	newPassword := "foobarfoobar"
 
@@ -293,7 +293,7 @@ func AccountRecoveryAccountPasswordAccount(t *testing.T, a func(*testing.T) auth
 	auth := a(t)
 	authtest.NewTestAccount(t, auth)
 	mux := http.NewServeMux()
-	handler.AttachHandlers(auth, mux, tmpl)
+	handler.AttachHandlers(mux, auth, tmpl)
 	newPassword := "foobarfoobar"
 
 	// Account Recovery
