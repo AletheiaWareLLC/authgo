@@ -6,7 +6,7 @@ type Database interface {
 	Close() error
 
 	CreateUser(string, string, []byte, time.Time) (int64, error)
-	SelectUser(string) (string, []byte, time.Time, error)
+	SelectUser(string) (int64, string, []byte, time.Time, error)
 	LookupUsername(string) (string, error)
 	ChangePassword(string, []byte) (int64, error)
 

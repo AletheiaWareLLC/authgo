@@ -97,6 +97,7 @@ func (a *authenticator) NewAccount(email, username string, password []byte) (*Ac
 	}
 	log.Println("Created Account", id)
 	acc := &Account{
+		ID:       id,
 		Email:    email,
 		Username: username,
 		Created:  created,
@@ -105,11 +106,12 @@ func (a *authenticator) NewAccount(email, username string, password []byte) (*Ac
 }
 
 func (a *authenticator) LookupAccount(username string) (*Account, error) {
-	email, _, created, err := a.database.SelectUser(username)
+	id, email, _, created, err := a.database.SelectUser(username)
 	if err != nil {
 		return nil, err
 	}
 	return &Account{
+		ID:       id,
 		Email:    email,
 		Username: username,
 		Created:  created,
@@ -117,7 +119,7 @@ func (a *authenticator) LookupAccount(username string) (*Account, error) {
 }
 
 func (a *authenticator) AuthenticateAccount(username string, password []byte) (*Account, error) {
-	email, hash, created, err := a.database.SelectUser(username)
+	id, email, hash, created, err := a.database.SelectUser(username)
 	if err != nil {
 		log.Println(err)
 		return nil, ErrIncorrectCredentials
@@ -126,6 +128,7 @@ func (a *authenticator) AuthenticateAccount(username string, password []byte) (*
 		return nil, ErrIncorrectCredentials
 	}
 	return &Account{
+		ID:       id,
 		Email:    email,
 		Username: username,
 		Created:  created,

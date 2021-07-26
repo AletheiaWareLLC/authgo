@@ -14,6 +14,7 @@ var (
 )
 
 type Account struct {
+	ID              int64
 	Email, Username string
 	Created         time.Time
 }
