@@ -7,294 +7,308 @@ import (
 	"time"
 )
 
-var ErrNoSuchRecord = errors.New("No Such Record")
+var (
+	ErrNoSuchRecord = errors.New("No Such Record")
+	nextId          = int64(1)
+)
 
-func NewInMemoryDatabase() authgo.Database {
-	return &inMemoryDatabase{
-		accountEmails:      make(map[string]string),
-		accountUsernames:   make(map[string]string),
-		accountPasswords:   make(map[string][]byte),
-		accountVerified:    make(map[string]bool),
-		accountCreated:     make(map[string]time.Time),
-		signupTokens:       make(map[string]bool),
-		signupCreated:      make(map[string]time.Time),
-		signupEmails:       make(map[string]string),
-		signupUsernames:    make(map[string]string),
-		signupChallenges:   make(map[string]string),
-		signupErrors:       make(map[string]string),
-		signinTokens:       make(map[string]bool),
-		signinCreated:      make(map[string]time.Time),
-		signinUsernames:    make(map[string]string),
-		signinAuths:        make(map[string]bool),
-		signinErrors:       make(map[string]string),
-		resetTokens:        make(map[string]bool),
-		resetCreated:       make(map[string]time.Time),
-		resetUsernames:     make(map[string]string),
-		resetErrors:        make(map[string]string),
-		recoveryTokens:     make(map[string]bool),
-		recoveryCreated:    make(map[string]time.Time),
-		recoveryEmails:     make(map[string]string),
-		recoveryUsernames:  make(map[string]string),
-		recoveryChallenges: make(map[string]string),
-		recoveryErrors:     make(map[string]string),
+func NextId() int64 {
+	n := nextId
+	nextId = nextId + 1
+	return n
+}
+
+func NewInMemoryDatabase() *InMemoryDatabase {
+	return &InMemoryDatabase{
+		AccountId:         make(map[string]int64),
+		AccountEmail:      make(map[string]string),
+		AccountUsername:   make(map[string]string),
+		AccountPassword:   make(map[string][]byte),
+		AccountVerified:    make(map[string]bool),
+		AccountCreated:     make(map[string]time.Time),
+		SignupToken:       make(map[string]bool),
+		SignupCreated:      make(map[string]time.Time),
+		SignupEmail:       make(map[string]string),
+		SignupUsername:    make(map[string]string),
+		SignupChallenge:   make(map[string]string),
+		SignupError:       make(map[string]string),
+		SigninToken:       make(map[string]bool),
+		SigninCreated:      make(map[string]time.Time),
+		SigninUsername:    make(map[string]string),
+		SigninAuth:        make(map[string]bool),
+		SigninError:       make(map[string]string),
+		ResetToken:        make(map[string]bool),
+		ResetCreated:       make(map[string]time.Time),
+		ResetUsername:     make(map[string]string),
+		ResetError:        make(map[string]string),
+		RecoveryToken:     make(map[string]bool),
+		RecoveryCreated:    make(map[string]time.Time),
+		RecoveryEmail:     make(map[string]string),
+		RecoveryUsername:  make(map[string]string),
+		RecoveryChallenge: make(map[string]string),
+		RecoveryError:     make(map[string]string),
 	}
 }
 
-type inMemoryDatabase struct {
+type InMemoryDatabase struct {
 	sync.RWMutex
-	accountEmails      map[string]string
-	accountUsernames   map[string]string
-	accountPasswords   map[string][]byte
-	accountVerified    map[string]bool
-	accountCreated     map[string]time.Time
-	signupTokens       map[string]bool
-	signupCreated      map[string]time.Time
-	signupEmails       map[string]string
-	signupUsernames    map[string]string
-	signupChallenges   map[string]string
-	signupErrors       map[string]string
-	signinTokens       map[string]bool
-	signinCreated      map[string]time.Time
-	signinUsernames    map[string]string
-	signinAuths        map[string]bool
-	signinErrors       map[string]string
-	resetTokens        map[string]bool
-	resetCreated       map[string]time.Time
-	resetUsernames     map[string]string
-	resetErrors        map[string]string
-	recoveryTokens     map[string]bool
-	recoveryCreated    map[string]time.Time
-	recoveryEmails     map[string]string
-	recoveryUsernames  map[string]string
-	recoveryChallenges map[string]string
-	recoveryErrors     map[string]string
+	AccountId         map[string]int64
+	AccountEmail      map[string]string
+	AccountUsername   map[string]string
+	AccountPassword   map[string][]byte
+	AccountVerified    map[string]bool
+	AccountCreated     map[string]time.Time
+	SignupToken       map[string]bool
+	SignupCreated      map[string]time.Time
+	SignupEmail       map[string]string
+	SignupUsername    map[string]string
+	SignupChallenge   map[string]string
+	SignupError       map[string]string
+	SigninToken       map[string]bool
+	SigninCreated      map[string]time.Time
+	SigninUsername    map[string]string
+	SigninAuth        map[string]bool
+	SigninError       map[string]string
+	ResetToken        map[string]bool
+	ResetCreated       map[string]time.Time
+	ResetUsername     map[string]string
+	ResetError        map[string]string
+	RecoveryToken     map[string]bool
+	RecoveryCreated    map[string]time.Time
+	RecoveryEmail     map[string]string
+	RecoveryUsername  map[string]string
+	RecoveryChallenge map[string]string
+	RecoveryError     map[string]string
 }
 
-func (db *inMemoryDatabase) Close() error {
+func (db *InMemoryDatabase) Close() error {
 	return nil
 }
 
-func (db *inMemoryDatabase) Ping() error {
+func (db *InMemoryDatabase) Ping() error {
 	return nil
 }
 
-func (db *inMemoryDatabase) CreateUser(email, username string, password []byte, created time.Time) (int64, error) {
+func (db *InMemoryDatabase) CreateUser(email, username string, password []byte, created time.Time) (int64, error) {
 	db.Lock()
 	defer db.Unlock()
-	if _, ok := db.accountUsernames[email]; ok {
+	if _, ok := db.AccountUsername[email]; ok {
 		return 0, authgo.ErrEmailAlreadyRegistered
 	}
-	if _, ok := db.accountEmails[username]; ok {
+	if _, ok := db.AccountEmail[username]; ok {
 		return 0, authgo.ErrUsernameAlreadyRegistered
 	}
-	db.accountEmails[username] = email
-	db.accountUsernames[email] = username
-	db.accountPasswords[username] = password
-	db.accountCreated[username] = created
-	return 1, nil
+	id := NextId()
+	db.AccountId[username] = id
+	db.AccountEmail[username] = email
+	db.AccountUsername[email] = username
+	db.AccountPassword[username] = password
+	db.AccountCreated[username] = created
+	return id, nil
 }
 
-func (db *inMemoryDatabase) SelectUser(username string) (string, []byte, time.Time, error) {
-	email, ok := db.accountEmails[username]
+func (db *InMemoryDatabase) SelectUser(username string) (int64, string, []byte, time.Time, error) {
+	id, ok := db.AccountId[username]
 	if !ok {
-		return "", nil, time.Time{}, authgo.ErrUsernameNotRegistered
+		return 0, "", nil, time.Time{}, authgo.ErrUsernameNotRegistered
 	}
-	password := db.accountPasswords[username]
-	created := db.accountCreated[username]
-	return email, password, created, nil
+	email := db.AccountEmail[username]
+	password := db.AccountPassword[username]
+	created := db.AccountCreated[username]
+	return id, email, password, created, nil
 }
 
-func (db *inMemoryDatabase) LookupUsername(email string) (string, error) {
-	username, ok := db.accountUsernames[email]
+func (db *InMemoryDatabase) LookupUsername(email string) (string, error) {
+	username, ok := db.AccountUsername[email]
 	if !ok {
 		return "", authgo.ErrEmailNotRegistered
 	}
 	return username, nil
 }
 
-func (db *inMemoryDatabase) ChangePassword(username string, password []byte) (int64, error) {
-	if _, ok := db.accountEmails[username]; !ok {
+func (db *InMemoryDatabase) ChangePassword(username string, password []byte) (int64, error) {
+	if _, ok := db.AccountEmail[username]; !ok {
 		return 0, authgo.ErrUsernameNotRegistered
 	}
-	db.accountPasswords[username] = password
+	db.AccountPassword[username] = password
 	return 1, nil
 }
 
-func (db *inMemoryDatabase) IsEmailVerified(email string) (bool, error) {
-	verified, ok := db.accountVerified[email]
+func (db *InMemoryDatabase) IsEmailVerified(email string) (bool, error) {
+	verified, ok := db.AccountVerified[email]
 	if !ok {
 		return false, authgo.ErrEmailNotRegistered
 	}
 	return verified, nil
 }
 
-func (db *inMemoryDatabase) SetEmailVerified(email string, verified bool) (int64, error) {
-	if _, ok := db.accountUsernames[email]; !ok {
+func (db *InMemoryDatabase) SetEmailVerified(email string, verified bool) (int64, error) {
+	if _, ok := db.AccountUsername[email]; !ok {
 		return 0, authgo.ErrEmailNotRegistered
 	}
-	db.accountVerified[email] = verified
+	db.AccountVerified[email] = verified
 	return 1, nil
 }
 
-func (db *inMemoryDatabase) CreateSignUpSession(token string, created time.Time) (int64, error) {
-	db.signupTokens[token] = true
-	db.signupCreated[token] = created
+func (db *InMemoryDatabase) CreateSignUpSession(token string, created time.Time) (int64, error) {
+	db.SignupToken[token] = true
+	db.SignupCreated[token] = created
 	return 1, nil
 }
 
-func (db *inMemoryDatabase) SelectSignUpSession(token string) (string, string, string, string, time.Time, error) {
-	if _, ok := db.signupTokens[token]; !ok {
+func (db *InMemoryDatabase) SelectSignUpSession(token string) (string, string, string, string, time.Time, error) {
+	if _, ok := db.SignupToken[token]; !ok {
 		return "", "", "", "", time.Time{}, ErrNoSuchRecord
 	}
-	errmsg := db.signupErrors[token]
-	email := db.signupEmails[token]
-	username := db.signupUsernames[token]
-	challenge := db.signupChallenges[token]
-	created := db.signupCreated[token]
+	errmsg := db.SignupError[token]
+	email := db.SignupEmail[token]
+	username := db.SignupUsername[token]
+	challenge := db.SignupChallenge[token]
+	created := db.SignupCreated[token]
 	return errmsg, email, username, challenge, created, nil
 }
 
-func (db *inMemoryDatabase) UpdateSignUpSessionError(token string, errmsg string) (int64, error) {
-	if _, ok := db.signupTokens[token]; !ok {
+func (db *InMemoryDatabase) UpdateSignUpSessionError(token string, errmsg string) (int64, error) {
+	if _, ok := db.SignupToken[token]; !ok {
 		return 0, ErrNoSuchRecord
 	}
-	db.signupErrors[token] = errmsg
+	db.SignupError[token] = errmsg
 	return 1, nil
 }
 
-func (db *inMemoryDatabase) UpdateSignUpSessionIdentity(token, email, username string) (int64, error) {
-	if _, ok := db.signupTokens[token]; !ok {
+func (db *InMemoryDatabase) UpdateSignUpSessionIdentity(token, email, username string) (int64, error) {
+	if _, ok := db.SignupToken[token]; !ok {
 		return 0, ErrNoSuchRecord
 	}
-	db.signupEmails[token] = email
-	db.signupUsernames[token] = username
+	db.SignupEmail[token] = email
+	db.SignupUsername[token] = username
 	return 1, nil
 }
 
-func (db *inMemoryDatabase) UpdateSignUpSessionChallenge(token, challenge string) (int64, error) {
-	if _, ok := db.signupTokens[token]; !ok {
+func (db *InMemoryDatabase) UpdateSignUpSessionChallenge(token, challenge string) (int64, error) {
+	if _, ok := db.SignupToken[token]; !ok {
 		return 0, ErrNoSuchRecord
 	}
-	db.signupChallenges[token] = challenge
+	db.SignupChallenge[token] = challenge
 	return 1, nil
 }
 
-func (db *inMemoryDatabase) CreateSignInSession(token string, username string, created time.Time) (int64, error) {
-	db.signinTokens[token] = true
+func (db *InMemoryDatabase) CreateSignInSession(token string, username string, created time.Time) (int64, error) {
+	db.SigninToken[token] = true
 	if username != "" {
-		db.signinUsernames[token] = username
-		db.signinAuths[token] = true
+		db.SigninUsername[token] = username
+		db.SigninAuth[token] = true
 	}
-	db.signinCreated[token] = created
+	db.SigninCreated[token] = created
 	return 1, nil
 }
 
-func (db *inMemoryDatabase) SelectSignInSession(token string) (string, string, time.Time, bool, error) {
-	if _, ok := db.signinTokens[token]; !ok {
+func (db *InMemoryDatabase) SelectSignInSession(token string) (string, string, time.Time, bool, error) {
+	if _, ok := db.SigninToken[token]; !ok {
 		return "", "", time.Time{}, false, ErrNoSuchRecord
 	}
-	errmsg := db.signinErrors[token]
-	username := db.signinUsernames[token]
-	created := db.signinCreated[token]
-	authorized := db.signinAuths[token]
+	errmsg := db.SigninError[token]
+	username := db.SigninUsername[token]
+	created := db.SigninCreated[token]
+	authorized := db.SigninAuth[token]
 	return errmsg, username, created, authorized, nil
 }
 
-func (db *inMemoryDatabase) UpdateSignInSessionError(token, errmsg string) (int64, error) {
-	if _, ok := db.signinTokens[token]; !ok {
+func (db *InMemoryDatabase) UpdateSignInSessionError(token, errmsg string) (int64, error) {
+	if _, ok := db.SigninToken[token]; !ok {
 		return 0, ErrNoSuchRecord
 	}
-	db.signinErrors[token] = errmsg
+	db.SigninError[token] = errmsg
 	return 1, nil
 }
 
-func (db *inMemoryDatabase) UpdateSignInSessionUsername(token, username string) (int64, error) {
-	if _, ok := db.signinTokens[token]; !ok {
+func (db *InMemoryDatabase) UpdateSignInSessionUsername(token, username string) (int64, error) {
+	if _, ok := db.SigninToken[token]; !ok {
 		return 0, ErrNoSuchRecord
 	}
-	db.signinUsernames[token] = username
+	db.SigninUsername[token] = username
 	return 1, nil
 }
 
-func (db *inMemoryDatabase) UpdateSignInSessionAuthenticated(token string, authorized bool) (int64, error) {
-	if _, ok := db.signinTokens[token]; !ok {
+func (db *InMemoryDatabase) UpdateSignInSessionAuthenticated(token string, authorized bool) (int64, error) {
+	if _, ok := db.SigninToken[token]; !ok {
 		return 0, ErrNoSuchRecord
 	}
-	db.signinAuths[token] = authorized
+	db.SigninAuth[token] = authorized
 	return 1, nil
 }
 
-func (db *inMemoryDatabase) CreateAccountPasswordSession(token string, username string, created time.Time) (int64, error) {
-	db.resetTokens[token] = true
-	db.resetUsernames[token] = username
-	db.resetCreated[token] = created
+func (db *InMemoryDatabase) CreateAccountPasswordSession(token string, username string, created time.Time) (int64, error) {
+	db.ResetToken[token] = true
+	db.ResetUsername[token] = username
+	db.ResetCreated[token] = created
 	return 1, nil
 }
 
-func (db *inMemoryDatabase) SelectAccountPasswordSession(token string) (string, string, time.Time, error) {
-	if _, ok := db.resetTokens[token]; !ok {
+func (db *InMemoryDatabase) SelectAccountPasswordSession(token string) (string, string, time.Time, error) {
+	if _, ok := db.ResetToken[token]; !ok {
 		return "", "", time.Time{}, ErrNoSuchRecord
 	}
-	errmsg := db.resetErrors[token]
-	username := db.resetUsernames[token]
-	created := db.resetCreated[token]
+	errmsg := db.ResetError[token]
+	username := db.ResetUsername[token]
+	created := db.ResetCreated[token]
 	return errmsg, username, created, nil
 }
 
-func (db *inMemoryDatabase) UpdateAccountPasswordSessionError(token, errmsg string) (int64, error) {
-	if _, ok := db.resetTokens[token]; !ok {
+func (db *InMemoryDatabase) UpdateAccountPasswordSessionError(token, errmsg string) (int64, error) {
+	if _, ok := db.ResetToken[token]; !ok {
 		return 0, ErrNoSuchRecord
 	}
-	db.resetErrors[token] = errmsg
+	db.ResetError[token] = errmsg
 	return 1, nil
 }
 
-func (db *inMemoryDatabase) CreateAccountRecoverySession(token string, created time.Time) (int64, error) {
-	db.recoveryTokens[token] = true
-	db.recoveryCreated[token] = created
+func (db *InMemoryDatabase) CreateAccountRecoverySession(token string, created time.Time) (int64, error) {
+	db.RecoveryToken[token] = true
+	db.RecoveryCreated[token] = created
 	return 1, nil
 }
 
-func (db *inMemoryDatabase) SelectAccountRecoverySession(token string) (string, string, string, string, time.Time, error) {
-	if _, ok := db.recoveryTokens[token]; !ok {
+func (db *InMemoryDatabase) SelectAccountRecoverySession(token string) (string, string, string, string, time.Time, error) {
+	if _, ok := db.RecoveryToken[token]; !ok {
 		return "", "", "", "", time.Time{}, ErrNoSuchRecord
 	}
-	errmsg := db.recoveryErrors[token]
-	email := db.recoveryEmails[token]
-	username := db.recoveryUsernames[token]
-	challenge := db.recoveryChallenges[token]
-	created := db.recoveryCreated[token]
+	errmsg := db.RecoveryError[token]
+	email := db.RecoveryEmail[token]
+	username := db.RecoveryUsername[token]
+	challenge := db.RecoveryChallenge[token]
+	created := db.RecoveryCreated[token]
 	return errmsg, email, username, challenge, created, nil
 }
 
-func (db *inMemoryDatabase) UpdateAccountRecoverySessionError(token, errmsg string) (int64, error) {
-	if _, ok := db.recoveryTokens[token]; !ok {
+func (db *InMemoryDatabase) UpdateAccountRecoverySessionError(token, errmsg string) (int64, error) {
+	if _, ok := db.RecoveryToken[token]; !ok {
 		return 0, ErrNoSuchRecord
 	}
-	db.recoveryErrors[token] = errmsg
+	db.RecoveryError[token] = errmsg
 	return 1, nil
 }
 
-func (db *inMemoryDatabase) UpdateAccountRecoverySessionEmail(token, email string) (int64, error) {
-	if _, ok := db.recoveryTokens[token]; !ok {
+func (db *InMemoryDatabase) UpdateAccountRecoverySessionEmail(token, email string) (int64, error) {
+	if _, ok := db.RecoveryToken[token]; !ok {
 		return 0, ErrNoSuchRecord
 	}
-	db.recoveryEmails[token] = email
+	db.RecoveryEmail[token] = email
 	return 1, nil
 }
 
-func (db *inMemoryDatabase) UpdateAccountRecoverySessionUsername(token, username string) (int64, error) {
-	if _, ok := db.recoveryTokens[token]; !ok {
+func (db *InMemoryDatabase) UpdateAccountRecoverySessionUsername(token, username string) (int64, error) {
+	if _, ok := db.RecoveryToken[token]; !ok {
 		return 0, ErrNoSuchRecord
 	}
-	db.recoveryUsernames[token] = username
+	db.RecoveryUsername[token] = username
 	return 1, nil
 }
 
-func (db *inMemoryDatabase) UpdateAccountRecoverySessionChallenge(token, challenge string) (int64, error) {
-	if _, ok := db.recoveryTokens[token]; !ok {
+func (db *InMemoryDatabase) UpdateAccountRecoverySessionChallenge(token, challenge string) (int64, error) {
+	if _, ok := db.RecoveryToken[token]; !ok {
 		return 0, ErrNoSuchRecord
 	}
-	db.recoveryChallenges[token] = challenge
+	db.RecoveryChallenge[token] = challenge
 	return 1, nil
 }
