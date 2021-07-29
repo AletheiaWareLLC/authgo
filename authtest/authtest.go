@@ -15,7 +15,7 @@ const (
 
 func NewAuthenticator(t *testing.T) authgo.Authenticator {
 	t.Helper()
-	db := database.NewInMemoryDatabase()
+	db := database.NewInMemory()
 	ev := NewEmailVerifier()
 	return authgo.NewAuthenticator(db, ev)
 }

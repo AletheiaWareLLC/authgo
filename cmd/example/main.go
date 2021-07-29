@@ -45,7 +45,7 @@ func main() {
 	}
 
 	// Create Database
-	db := database.NewInMemoryDatabase()
+	db := database.NewInMemory()
 
 	// Create Email Verifier
 	ev := authtest.NewEmailVerifier()

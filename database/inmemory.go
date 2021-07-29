@@ -18,31 +18,31 @@ func NextId() int64 {
 	return n
 }
 
-func NewInMemoryDatabase() *InMemoryDatabase {
-	return &InMemoryDatabase{
+func NewInMemory() *InMemory {
+	return &InMemory{
 		AccountId:         make(map[string]int64),
 		AccountEmail:      make(map[string]string),
 		AccountUsername:   make(map[string]string),
 		AccountPassword:   make(map[string][]byte),
-		AccountVerified:    make(map[string]bool),
-		AccountCreated:     make(map[string]time.Time),
+		AccountVerified:   make(map[string]bool),
+		AccountCreated:    make(map[string]time.Time),
 		SignupToken:       make(map[string]bool),
-		SignupCreated:      make(map[string]time.Time),
+		SignupCreated:     make(map[string]time.Time),
 		SignupEmail:       make(map[string]string),
 		SignupUsername:    make(map[string]string),
 		SignupChallenge:   make(map[string]string),
 		SignupError:       make(map[string]string),
 		SigninToken:       make(map[string]bool),
-		SigninCreated:      make(map[string]time.Time),
+		SigninCreated:     make(map[string]time.Time),
 		SigninUsername:    make(map[string]string),
 		SigninAuth:        make(map[string]bool),
 		SigninError:       make(map[string]string),
 		ResetToken:        make(map[string]bool),
-		ResetCreated:       make(map[string]time.Time),
+		ResetCreated:      make(map[string]time.Time),
 		ResetUsername:     make(map[string]string),
 		ResetError:        make(map[string]string),
 		RecoveryToken:     make(map[string]bool),
-		RecoveryCreated:    make(map[string]time.Time),
+		RecoveryCreated:   make(map[string]time.Time),
 		RecoveryEmail:     make(map[string]string),
 		RecoveryUsername:  make(map[string]string),
 		RecoveryChallenge: make(map[string]string),
@@ -50,46 +50,46 @@ func NewInMemoryDatabase() *InMemoryDatabase {
 	}
 }
 
-type InMemoryDatabase struct {
+type InMemory struct {
 	sync.RWMutex
 	AccountId         map[string]int64
 	AccountEmail      map[string]string
 	AccountUsername   map[string]string
 	AccountPassword   map[string][]byte
-	AccountVerified    map[string]bool
-	AccountCreated     map[string]time.Time
+	AccountVerified   map[string]bool
+	AccountCreated    map[string]time.Time
 	SignupToken       map[string]bool
-	SignupCreated      map[string]time.Time
+	SignupCreated     map[string]time.Time
 	SignupEmail       map[string]string
 	SignupUsername    map[string]string
 	SignupChallenge   map[string]string
 	SignupError       map[string]string
 	SigninToken       map[string]bool
-	SigninCreated      map[string]time.Time
+	SigninCreated     map[string]time.Time
 	SigninUsername    map[string]string
 	SigninAuth        map[string]bool
 	SigninError       map[string]string
 	ResetToken        map[string]bool
-	ResetCreated       map[string]time.Time
+	ResetCreated      map[string]time.Time
 	ResetUsername     map[string]string
 	ResetError        map[string]string
 	RecoveryToken     map[string]bool
-	RecoveryCreated    map[string]time.Time
+	RecoveryCreated   map[string]time.Time
 	RecoveryEmail     map[string]string
 	RecoveryUsername  map[string]string
 	RecoveryChallenge map[string]string
 	RecoveryError     map[string]string
 }
 
-func (db *InMemoryDatabase) Close() error {
+func (db *InMemory) Close() error {
 	return nil
 }
 
-func (db *InMemoryDatabase) Ping() error {
+func (db *InMemory) Ping() error {
 	return nil
 }
 
-func (db *InMemoryDatabase) CreateUser(email, username string, password []byte, created time.Time) (int64, error) {
+func (db *InMemory) CreateUser(email, username string, password []byte, created time.Time) (int64, error) {
 	db.Lock()
 	defer db.Unlock()
 	if _, ok := db.AccountUsername[email]; ok {
@@ -107,7 +107,7 @@ func (db *InMemoryDatabase) CreateUser(email, username string, password []byte, 
 	return id, nil
 }
 
-func (db *InMemoryDatabase) SelectUser(username string) (int64, string, []byte, time.Time, error) {
+func (db *InMemory) SelectUser(username string) (int64, string, []byte, time.Time, error) {
 	id, ok := db.AccountId[username]
 	if !ok {
 		return 0, "", nil, time.Time{}, authgo.ErrUsernameNotRegistered
@@ -118,7 +118,7 @@ func (db *InMemoryDatabase) SelectUser(username string) (int64, string, []byte, 
 	return id, email, password, created, nil
 }
 
-func (db *InMemoryDatabase) LookupUsername(email string) (string, error) {
+func (db *InMemory) LookupUsername(email string) (string, error) {
 	username, ok := db.AccountUsername[email]
 	if !ok {
 		return "", authgo.ErrEmailNotRegistered
@@ -126,7 +126,7 @@ func (db *InMemoryDatabase) LookupUsername(email string) (string, error) {
 	return username, nil
 }
 
-func (db *InMemoryDatabase) ChangePassword(username string, password []byte) (int64, error) {
+func (db *InMemory) ChangePassword(username string, password []byte) (int64, error) {
 	if _, ok := db.AccountEmail[username]; !ok {
 		return 0, authgo.ErrUsernameNotRegistered
 	}
@@ -134,7 +134,7 @@ func (db *InMemoryDatabase) ChangePassword(username string, password []byte) (in
 	return 1, nil
 }
 
-func (db *InMemoryDatabase) IsEmailVerified(email string) (bool, error) {
+func (db *InMemory) IsEmailVerified(email string) (bool, error) {
 	verified, ok := db.AccountVerified[email]
 	if !ok {
 		return false, authgo.ErrEmailNotRegistered
@@ -142,7 +142,7 @@ func (db *InMemoryDatabase) IsEmailVerified(email string) (bool, error) {
 	return verified, nil
 }
 
-func (db *InMemoryDatabase) SetEmailVerified(email string, verified bool) (int64, error) {
+func (db *InMemory) SetEmailVerified(email string, verified bool) (int64, error) {
 	if _, ok := db.AccountUsername[email]; !ok {
 		return 0, authgo.ErrEmailNotRegistered
 	}
@@ -150,13 +150,13 @@ func (db *InMemoryDatabase) SetEmailVerified(email string, verified bool) (int64
 	return 1, nil
 }
 
-func (db *InMemoryDatabase) CreateSignUpSession(token string, created time.Time) (int64, error) {
+func (db *InMemory) CreateSignUpSession(token string, created time.Time) (int64, error) {
 	db.SignupToken[token] = true
 	db.SignupCreated[token] = created
 	return 1, nil
 }
 
-func (db *InMemoryDatabase) SelectSignUpSession(token string) (string, string, string, string, time.Time, error) {
+func (db *InMemory) SelectSignUpSession(token string) (string, string, string, string, time.Time, error) {
 	if _, ok := db.SignupToken[token]; !ok {
 		return "", "", "", "", time.Time{}, ErrNoSuchRecord
 	}
@@ -168,7 +168,7 @@ func (db *InMemoryDatabase) SelectSignUpSession(token string) (string, string, s
 	return errmsg, email, username, challenge, created, nil
 }
 
-func (db *InMemoryDatabase) UpdateSignUpSessionError(token string, errmsg string) (int64, error) {
+func (db *InMemory) UpdateSignUpSessionError(token string, errmsg string) (int64, error) {
 	if _, ok := db.SignupToken[token]; !ok {
 		return 0, ErrNoSuchRecord
 	}
@@ -176,7 +176,7 @@ func (db *InMemoryDatabase) UpdateSignUpSessionError(token string, errmsg string
 	return 1, nil
 }
 
-func (db *InMemoryDatabase) UpdateSignUpSessionIdentity(token, email, username string) (int64, error) {
+func (db *InMemory) UpdateSignUpSessionIdentity(token, email, username string) (int64, error) {
 	if _, ok := db.SignupToken[token]; !ok {
 		return 0, ErrNoSuchRecord
 	}
@@ -185,7 +185,7 @@ func (db *InMemoryDatabase) UpdateSignUpSessionIdentity(token, email, username s
 	return 1, nil
 }
 
-func (db *InMemoryDatabase) UpdateSignUpSessionChallenge(token, challenge string) (int64, error) {
+func (db *InMemory) UpdateSignUpSessionChallenge(token, challenge string) (int64, error) {
 	if _, ok := db.SignupToken[token]; !ok {
 		return 0, ErrNoSuchRecord
 	}
@@ -193,7 +193,7 @@ func (db *InMemoryDatabase) UpdateSignUpSessionChallenge(token, challenge string
 	return 1, nil
 }
 
-func (db *InMemoryDatabase) CreateSignInSession(token string, username string, created time.Time) (int64, error) {
+func (db *InMemory) CreateSignInSession(token string, username string, created time.Time) (int64, error) {
 	db.SigninToken[token] = true
 	if username != "" {
 		db.SigninUsername[token] = username
@@ -203,7 +203,7 @@ func (db *InMemoryDatabase) CreateSignInSession(token string, username string, c
 	return 1, nil
 }
 
-func (db *InMemoryDatabase) SelectSignInSession(token string) (string, string, time.Time, bool, error) {
+func (db *InMemory) SelectSignInSession(token string) (string, string, time.Time, bool, error) {
 	if _, ok := db.SigninToken[token]; !ok {
 		return "", "", time.Time{}, false, ErrNoSuchRecord
 	}
@@ -214,7 +214,7 @@ func (db *InMemoryDatabase) SelectSignInSession(token string) (string, string, t
 	return errmsg, username, created, authorized, nil
 }
 
-func (db *InMemoryDatabase) UpdateSignInSessionError(token, errmsg string) (int64, error) {
+func (db *InMemory) UpdateSignInSessionError(token, errmsg string) (int64, error) {
 	if _, ok := db.SigninToken[token]; !ok {
 		return 0, ErrNoSuchRecord
 	}
@@ -222,7 +222,7 @@ func (db *InMemoryDatabase) UpdateSignInSessionError(token, errmsg string) (int6
 	return 1, nil
 }
 
-func (db *InMemoryDatabase) UpdateSignInSessionUsername(token, username string) (int64, error) {
+func (db *InMemory) UpdateSignInSessionUsername(token, username string) (int64, error) {
 	if _, ok := db.SigninToken[token]; !ok {
 		return 0, ErrNoSuchRecord
 	}
@@ -230,7 +230,7 @@ func (db *InMemoryDatabase) UpdateSignInSessionUsername(token, username string) 
 	return 1, nil
 }
 
-func (db *InMemoryDatabase) UpdateSignInSessionAuthenticated(token string, authorized bool) (int64, error) {
+func (db *InMemory) UpdateSignInSessionAuthenticated(token string, authorized bool) (int64, error) {
 	if _, ok := db.SigninToken[token]; !ok {
 		return 0, ErrNoSuchRecord
 	}
@@ -238,14 +238,14 @@ func (db *InMemoryDatabase) UpdateSignInSessionAuthenticated(token string, autho
 	return 1, nil
 }
 
-func (db *InMemoryDatabase) CreateAccountPasswordSession(token string, username string, created time.Time) (int64, error) {
+func (db *InMemory) CreateAccountPasswordSession(token string, username string, created time.Time) (int64, error) {
 	db.ResetToken[token] = true
 	db.ResetUsername[token] = username
 	db.ResetCreated[token] = created
 	return 1, nil
 }
 
-func (db *InMemoryDatabase) SelectAccountPasswordSession(token string) (string, string, time.Time, error) {
+func (db *InMemory) SelectAccountPasswordSession(token string) (string, string, time.Time, error) {
 	if _, ok := db.ResetToken[token]; !ok {
 		return "", "", time.Time{}, ErrNoSuchRecord
 	}
@@ -255,7 +255,7 @@ func (db *InMemoryDatabase) SelectAccountPasswordSession(token string) (string, 
 	return errmsg, username, created, nil
 }
 
-func (db *InMemoryDatabase) UpdateAccountPasswordSessionError(token, errmsg string) (int64, error) {
+func (db *InMemory) UpdateAccountPasswordSessionError(token, errmsg string) (int64, error) {
 	if _, ok := db.ResetToken[token]; !ok {
 		return 0, ErrNoSuchRecord
 	}
@@ -263,13 +263,13 @@ func (db *InMemoryDatabase) UpdateAccountPasswordSessionError(token, errmsg stri
 	return 1, nil
 }
 
-func (db *InMemoryDatabase) CreateAccountRecoverySession(token string, created time.Time) (int64, error) {
+func (db *InMemory) CreateAccountRecoverySession(token string, created time.Time) (int64, error) {
 	db.RecoveryToken[token] = true
 	db.RecoveryCreated[token] = created
 	return 1, nil
 }
 
-func (db *InMemoryDatabase) SelectAccountRecoverySession(token string) (string, string, string, string, time.Time, error) {
+func (db *InMemory) SelectAccountRecoverySession(token string) (string, string, string, string, time.Time, error) {
 	if _, ok := db.RecoveryToken[token]; !ok {
 		return "", "", "", "", time.Time{}, ErrNoSuchRecord
 	}
@@ -281,7 +281,7 @@ func (db *InMemoryDatabase) SelectAccountRecoverySession(token string) (string, 
 	return errmsg, email, username, challenge, created, nil
 }
 
-func (db *InMemoryDatabase) UpdateAccountRecoverySessionError(token, errmsg string) (int64, error) {
+func (db *InMemory) UpdateAccountRecoverySessionError(token, errmsg string) (int64, error) {
 	if _, ok := db.RecoveryToken[token]; !ok {
 		return 0, ErrNoSuchRecord
 	}
@@ -289,7 +289,7 @@ func (db *InMemoryDatabase) UpdateAccountRecoverySessionError(token, errmsg stri
 	return 1, nil
 }
 
-func (db *InMemoryDatabase) UpdateAccountRecoverySessionEmail(token, email string) (int64, error) {
+func (db *InMemory) UpdateAccountRecoverySessionEmail(token, email string) (int64, error) {
 	if _, ok := db.RecoveryToken[token]; !ok {
 		return 0, ErrNoSuchRecord
 	}
@@ -297,7 +297,7 @@ func (db *InMemoryDatabase) UpdateAccountRecoverySessionEmail(token, email strin
 	return 1, nil
 }
 
-func (db *InMemoryDatabase) UpdateAccountRecoverySessionUsername(token, username string) (int64, error) {
+func (db *InMemory) UpdateAccountRecoverySessionUsername(token, username string) (int64, error) {
 	if _, ok := db.RecoveryToken[token]; !ok {
 		return 0, ErrNoSuchRecord
 	}
@@ -305,7 +305,7 @@ func (db *InMemoryDatabase) UpdateAccountRecoverySessionUsername(token, username
 	return 1, nil
 }
 
-func (db *InMemoryDatabase) UpdateAccountRecoverySessionChallenge(token, challenge string) (int64, error) {
+func (db *InMemory) UpdateAccountRecoverySessionChallenge(token, challenge string) (int64, error) {
 	if _, ok := db.RecoveryToken[token]; !ok {
 		return 0, ErrNoSuchRecord
 	}
