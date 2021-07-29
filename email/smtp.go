@@ -9,36 +9,29 @@ import (
 	"net/smtp"
 )
 
-func SendEmail(server, from, to string, template *template.Template, data interface{}) error {
-	var buffer bytes.Buffer
-	if err := template.Execute(&buffer, data); err != nil {
-		log.Println(err)
-		return err
-	}
-	return smtp.SendMail(server, nil, from, []string{to}, buffer.Bytes())
-}
-
 type SmtpEmailVerifier struct {
 	Server   string
+	Identity string
 	Sender   string
 	Template *template.Template
 }
 
-func NewSmtpEmailVerifier(server, sender string, template *template.Template) *SmtpEmailVerifier {
+func NewSmtpEmailVerifier(server, identity, sender string, template *template.Template) *SmtpEmailVerifier {
 	return &SmtpEmailVerifier{
 		Server:   server,
+		Identity: identity,
 		Sender:   sender,
 		Template: template,
 	}
 }
 
 func (v SmtpEmailVerifier) VerifyEmail(email string) (string, error) {
-	log.Println("Verifying Email", email)
 	code, err := cryptogo.RandomString(authgo.VERIFICATION_CODE_LENGTH)
 	if err != nil {
 		return "", err
 	}
-	log.Println("Verification Code", code)
+	code = code[:authgo.VERIFICATION_CODE_LENGTH]
+	log.Println("Verifying Email:", email, "Code:", code)
 	data := struct {
 		From string
 		To   string
@@ -48,7 +41,30 @@ func (v SmtpEmailVerifier) VerifyEmail(email string) (string, error) {
 		To:   email,
 		Code: code,
 	}
-	if err := SendEmail(v.Server, v.Sender, email, v.Template, data); err != nil {
+	var buffer bytes.Buffer
+	if err := v.Template.Execute(&buffer, data); err != nil {
+		return "", err
+	}
+	c, err := smtp.Dial(v.Server)
+	if err != nil {
+		return "", err
+	}
+	defer c.Close()
+	if err := c.Hello(v.Identity); err != nil {
+		return "", err
+	}
+	if err := c.Mail(v.Sender); err != nil {
+		return "", err
+	}
+	if err := c.Rcpt(email); err != nil {
+		return "", err
+	}
+	wc, err := c.Data()
+	if err != nil {
+		return "", err
+	}
+	defer wc.Close()
+	if _, err := buffer.WriteTo(wc); err != nil {
 		return "", err
 	}
 	return code, nil

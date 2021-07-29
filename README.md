@@ -27,7 +27,7 @@ db := NewSqlDatabase()
 ev := authtest.NewEmailVerifier()
 
 // In production use an SMTP service to send the verification code.
-ev := email.NewSmtpEmailVerifier("smtp-relay.gmail.com:25", "noreply@example.com", templates.Lookup("email-verification.go.html"))
+ev := email.NewSmtpEmailVerifier("smtp-relay.gmail.com:25", "example.com", "noreply@example.com", templates.Lookup("email-verification.go.html"))
 ```
 
 4. Create the Authenticator.
