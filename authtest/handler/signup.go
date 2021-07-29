@@ -278,7 +278,7 @@ func SignUpVerification(t *testing.T, a func(*testing.T) authgo.Authenticator) {
 		assert.Equal(t, authgo.COOKIE_SIGN_IN, cookies[0].Name)
 		u, err := result.Location()
 		assert.Nil(t, err)
-		assert.Equal(t, "/", u.String())
+		assert.Equal(t, "/account", u.String())
 		username, authenticated, errmsg, ok := auth.LookupSignInSession(cookies[0].Value)
 		assert.Equal(t, authtest.TEST_USERNAME, username)
 		assert.True(t, authenticated)

@@ -173,7 +173,7 @@ func SignUpVerification(a authgo.Authenticator, ts *template.Template) http.Hand
 
 			http.SetCookie(w, authgo.NewSignInSessionCookie(token))
 
-			redirect.Index(w, r)
+			redirect.Account(w, r)
 		}
 	})
 }
