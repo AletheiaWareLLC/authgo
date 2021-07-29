@@ -3,11 +3,16 @@ package handler
 import (
 	"aletheiaware.com/authgo"
 	"aletheiaware.com/authgo/redirect"
+	"aletheiaware.com/netgo/handler"
 	"html/template"
 	"log"
 	"net/http"
 	"strings"
 )
+
+func AttachSignInHandler(m *http.ServeMux, a authgo.Authenticator, ts *template.Template) {
+	m.Handle("/sign-in", handler.Log(SignIn(a, ts)))
+}
 
 func SignIn(a authgo.Authenticator, ts *template.Template) http.Handler {
 	ev := a.EmailVerifier()

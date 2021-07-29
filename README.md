@@ -37,7 +37,7 @@ auth := authgo.NewAuthenticator(db, ev)
 
 5. Attach the HTTP Handlers with the HTML templates.
 ```go
-handler.AttachHandlers(mux, auth, templates)
+handler.AttachAuthenticationHandlers(mux, auth, templates)
 ```
 
 6. Add Authentication Checks to your HTTP Handlers.

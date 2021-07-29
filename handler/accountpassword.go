@@ -3,11 +3,16 @@ package handler
 import (
 	"aletheiaware.com/authgo"
 	"aletheiaware.com/authgo/redirect"
+	"aletheiaware.com/netgo/handler"
 	"html/template"
 	"log"
 	"net/http"
 	"strings"
 )
+
+func AttachAccountPasswordHandler(m *http.ServeMux, a authgo.Authenticator, ts *template.Template) {
+	m.Handle("/account-password", handler.Log(AccountPassword(a, ts)))
+}
 
 func AccountPassword(a authgo.Authenticator, ts *template.Template) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {

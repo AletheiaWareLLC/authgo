@@ -3,11 +3,17 @@ package handler
 import (
 	"aletheiaware.com/authgo"
 	"aletheiaware.com/authgo/redirect"
+	"aletheiaware.com/netgo/handler"
 	"html/template"
 	"log"
 	"net/http"
 	"strings"
 )
+
+func AttachAccountRecoveryHandler(m *http.ServeMux, a authgo.Authenticator, ts *template.Template) {
+	m.Handle("/account-recovery", handler.Log(AccountRecovery(a, ts)))
+	m.Handle("/account-recovery-verification", handler.Log(AccountRecoveryVerification(a, ts)))
+}
 
 func AccountRecovery(a authgo.Authenticator, ts *template.Template) http.Handler {
 	ev := a.EmailVerifier()

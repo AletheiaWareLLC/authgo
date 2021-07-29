@@ -20,7 +20,7 @@ func SignUp(t *testing.T, a func(*testing.T) authgo.Authenticator) {
 	t.Run("Redirects When Signed In", func(t *testing.T) {
 		auth := a(t)
 		mux := http.NewServeMux()
-		handler.AttachHandlers(mux, auth, tmpl)
+		handler.AttachSignUpHandler(mux, auth, tmpl)
 		authtest.NewTestAccount(t, auth)
 		token, _ := authtest.SignIn(t, auth)
 		request := httptest.NewRequest(http.MethodGet, "/sign-up", nil)
@@ -36,7 +36,7 @@ func SignUp(t *testing.T, a func(*testing.T) authgo.Authenticator) {
 	t.Run("Returns 200 When Not Signed In", func(t *testing.T) {
 		auth := a(t)
 		mux := http.NewServeMux()
-		handler.AttachHandlers(mux, auth, tmpl)
+		handler.AttachSignUpHandler(mux, auth, tmpl)
 		request := httptest.NewRequest(http.MethodGet, "/sign-up", nil)
 		response := httptest.NewRecorder()
 		mux.ServeHTTP(response, request)
@@ -52,7 +52,7 @@ func SignUp(t *testing.T, a func(*testing.T) authgo.Authenticator) {
 	t.Run("Redirects After Sign Up", func(t *testing.T) {
 		auth := a(t)
 		mux := http.NewServeMux()
-		handler.AttachHandlers(mux, auth, tmpl)
+		handler.AttachSignUpHandler(mux, auth, tmpl)
 		request := httptest.NewRequest(http.MethodGet, "/sign-up", nil)
 		response := httptest.NewRecorder()
 		mux.ServeHTTP(response, request)
@@ -174,7 +174,7 @@ func SignUp(t *testing.T, a func(*testing.T) authgo.Authenticator) {
 			t.Run(name, func(t *testing.T) {
 				auth := a(t)
 				mux := http.NewServeMux()
-				handler.AttachHandlers(mux, auth, tmpl)
+				handler.AttachSignUpHandler(mux, auth, tmpl)
 				_, err := auth.NewAccount(existingEmail, existingUsername, []byte(authtest.TEST_PASSWORD))
 				assert.Nil(t, err)
 				request := httptest.NewRequest(http.MethodGet, "/sign-up", nil)
@@ -225,7 +225,7 @@ func SignUpVerification(t *testing.T, a func(*testing.T) authgo.Authenticator) {
 	t.Run("Returns 200 When Signed Up", func(t *testing.T) {
 		auth := a(t)
 		mux := http.NewServeMux()
-		handler.AttachHandlers(mux, auth, tmpl)
+		handler.AttachSignUpHandler(mux, auth, tmpl)
 		authtest.NewTestAccount(t, auth)
 		token, err := auth.NewSignUpSession()
 		assert.Nil(t, err)
@@ -242,7 +242,7 @@ func SignUpVerification(t *testing.T, a func(*testing.T) authgo.Authenticator) {
 	t.Run("Redirects When Not Signed Up", func(t *testing.T) {
 		auth := a(t)
 		mux := http.NewServeMux()
-		handler.AttachHandlers(mux, auth, tmpl)
+		handler.AttachSignUpHandler(mux, auth, tmpl)
 		request := httptest.NewRequest(http.MethodGet, "/sign-up-verification", nil)
 		response := httptest.NewRecorder()
 		mux.ServeHTTP(response, request)
@@ -255,7 +255,7 @@ func SignUpVerification(t *testing.T, a func(*testing.T) authgo.Authenticator) {
 	t.Run("Redirects After Sign Up Verification", func(t *testing.T) {
 		auth := a(t)
 		mux := http.NewServeMux()
-		handler.AttachHandlers(mux, auth, tmpl)
+		handler.AttachSignUpHandler(mux, auth, tmpl)
 		authtest.NewTestAccount(t, auth)
 		token, err := auth.NewSignUpSession()
 		assert.Nil(t, err)
@@ -289,7 +289,7 @@ func SignUpVerification(t *testing.T, a func(*testing.T) authgo.Authenticator) {
 	t.Run("Redirects When Challenge Is Incorrect", func(t *testing.T) {
 		auth := a(t)
 		mux := http.NewServeMux()
-		handler.AttachHandlers(mux, auth, tmpl)
+		handler.AttachSignUpHandler(mux, auth, tmpl)
 		token, err := auth.NewSignUpSession()
 		assert.Nil(t, err)
 		cookie := authgo.NewSignUpSessionCookie(token)
