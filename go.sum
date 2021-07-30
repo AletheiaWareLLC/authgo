@@ -1,7 +1,7 @@
 aletheiaware.com/cryptogo v1.2.2 h1:d7vEEgf3bZFnLk+HG1wCAY/pgRz+zNYvKFpxsli3Mng=
 aletheiaware.com/cryptogo v1.2.2/go.mod h1:B1mJVIsfEDJoovkD2fLsZXgXxR1AAe2cDmjFwt7Eau4=
-aletheiaware.com/netgo v1.2.2 h1:f70B1KT8f/RKGTNKQRMFljDrUeWQBCjzcUIpB0gcSPQ=
-aletheiaware.com/netgo v1.2.2/go.mod h1:HmbqtBYjGtUUC+TSQzVHZHwmksj9GNGYBBwiKkPYhyY=
+aletheiaware.com/netgo v1.2.3 h1:FRlly64vhsuj7MvEGx7j9VcpASHf2OH5DZPNlphCxDk=
+aletheiaware.com/netgo v1.2.3/go.mod h1:hOmTADW1i6QTns2MHHdXU3ZVbs7Qsmn+r5f0qzcXlaE=
 github.com/davecgh/go-spew v1.1.0 h1:ZDRjVQ15GmhC3fiQ8ni8+OwkZQO4DARzQgrnXU1Liz8=
 github.com/davecgh/go-spew v1.1.0/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
 github.com/golang/protobuf v1.5.0/go.mod h1:FsONVRAS9T7sI+LIUmWTfcYkHO4aIWwzhcaSAoJOfIk=

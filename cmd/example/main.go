@@ -32,7 +32,7 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	nethandler.AttachStaticFSHandler(mux, staticFS)
+	nethandler.AttachStaticFSHandler(mux, staticFS, true)
 
 	// Parse Templates
 	templateFS, err := fs.Sub(embeddedFS, path.Join("assets", "html", "template"))
