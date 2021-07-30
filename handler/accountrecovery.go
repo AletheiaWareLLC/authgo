@@ -134,7 +134,7 @@ func AccountRecoveryVerification(a authgo.Authenticator, ts *template.Template) 
 			a.SetAccountRecoverySessionError(token, "")
 
 			if strings.TrimSpace(r.FormValue("verification")) != challenge {
-				a.SetAccountRecoverySessionError(token, authgo.ErrIncorrectEmailVerification.Error())
+				a.SetAccountRecoverySessionError(token, authgo.ErrEmailVerificationIncorrect.Error())
 				redirect.AccountRecoveryVerification(w, r)
 				return
 			}

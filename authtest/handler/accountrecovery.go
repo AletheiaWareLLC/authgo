@@ -235,6 +235,6 @@ func AccountRecoveryVerification(t *testing.T, a func(*testing.T) authgo.Authent
 		assert.Equal(t, http.StatusOK, result.StatusCode)
 		body, err := io.ReadAll(result.Body)
 		assert.Nil(t, err)
-		assert.Equal(t, authgo.ErrIncorrectEmailVerification.Error(), string(body))
+		assert.Equal(t, authgo.ErrEmailVerificationIncorrect.Error(), string(body))
 	})
 }

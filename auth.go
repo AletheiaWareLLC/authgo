@@ -67,7 +67,6 @@ type authenticator struct {
 
 func (a *authenticator) CurrentAccount(w http.ResponseWriter, r *http.Request) *Account {
 	token, username, authenticated, _ := a.CurrentSignInSession(r)
-	log.Println(token, username, authenticated)
 	if token == "" || username == "" || !authenticated {
 		return nil
 	}
@@ -122,10 +121,10 @@ func (a *authenticator) AuthenticateAccount(username string, password []byte) (*
 	id, email, hash, created, err := a.database.SelectUser(username)
 	if err != nil {
 		log.Println(err)
-		return nil, ErrIncorrectCredentials
+		return nil, ErrCredentialsIncorrect
 	}
 	if !CheckPasswordHash(hash, password) {
-		return nil, ErrIncorrectCredentials
+		return nil, ErrCredentialsIncorrect
 	}
 	return &Account{
 		ID:       id,

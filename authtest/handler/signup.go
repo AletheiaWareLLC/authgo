@@ -97,7 +97,7 @@ func SignUp(t *testing.T, a func(*testing.T) authgo.Authenticator) {
 			result string
 		}{
 			"Empty": {
-				result: authgo.ErrInvalidEmail.Error(),
+				result: authgo.ErrEmailInvalid.Error(),
 			},
 			"Email Missing": {
 				form: map[string]string{
@@ -105,7 +105,7 @@ func SignUp(t *testing.T, a func(*testing.T) authgo.Authenticator) {
 					"password":     authtest.TEST_PASSWORD,
 					"confirmation": authtest.TEST_PASSWORD,
 				},
-				result: authgo.ErrInvalidEmail.Error(),
+				result: authgo.ErrEmailInvalid.Error(),
 			},
 			"Email Invalid": {
 				form: map[string]string{
@@ -114,8 +114,9 @@ func SignUp(t *testing.T, a func(*testing.T) authgo.Authenticator) {
 					"password":     authtest.TEST_PASSWORD,
 					"confirmation": authtest.TEST_PASSWORD,
 				},
-				result: authgo.ErrInvalidEmail.Error(),
+				result: authgo.ErrEmailInvalid.Error(),
 			},
+			// TODO Email Too Long
 			"Email Already Registered": {
 				form: map[string]string{
 					"email":        existingEmail,
@@ -132,7 +133,7 @@ func SignUp(t *testing.T, a func(*testing.T) authgo.Authenticator) {
 					"password":     authtest.TEST_PASSWORD,
 					"confirmation": authtest.TEST_PASSWORD,
 				},
-				result: authgo.ErrInvalidUsername.Error(),
+				result: authgo.ErrUsernameTooShort.Error(),
 			},
 			"Username Too Long": {
 				form: map[string]string{
@@ -141,7 +142,7 @@ func SignUp(t *testing.T, a func(*testing.T) authgo.Authenticator) {
 					"password":     authtest.TEST_PASSWORD,
 					"confirmation": authtest.TEST_PASSWORD,
 				},
-				result: authgo.ErrInvalidUsername.Error(),
+				result: authgo.ErrUsernameTooLong.Error(),
 			},
 			"Username Already Registered": {
 				form: map[string]string{
@@ -318,6 +319,6 @@ func SignUpVerification(t *testing.T, a func(*testing.T) authgo.Authenticator) {
 		assert.Equal(t, http.StatusOK, result.StatusCode)
 		body, err := io.ReadAll(result.Body)
 		assert.Nil(t, err)
-		assert.Equal(t, authgo.ErrIncorrectEmailVerification.Error(), string(body))
+		assert.Equal(t, authgo.ErrEmailVerificationIncorrect.Error(), string(body))
 	})
 }

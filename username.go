@@ -7,11 +7,18 @@ const (
 	MAXIMUM_USERNAME_LENGTH = 100
 )
 
-var ErrInvalidUsername = errors.New("Invalid Username")
+var (
+	ErrUsernameTooShort = errors.New("Username Too Short")
+	ErrUsernameTooLong  = errors.New("Username Too Long")
+)
 
 func ValidateUsername(username string) error {
-	if length := len(username); length < MINIMUM_USERNAME_LENGTH || length > MAXIMUM_USERNAME_LENGTH {
-		return ErrInvalidUsername
+	length := len(username)
+	if length < MINIMUM_USERNAME_LENGTH {
+		return ErrUsernameTooShort
+	}
+	if length > MAXIMUM_USERNAME_LENGTH {
+		return ErrUsernameTooLong
 	}
 	return nil
 }

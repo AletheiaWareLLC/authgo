@@ -5,19 +5,26 @@ import (
 	"regexp"
 )
 
-const VERIFICATION_CODE_LENGTH = 8
+const (
+	MAXIMUM_EMAIL_LENGTH     = 320
+	VERIFICATION_CODE_LENGTH = 8
+)
 
 var (
-	ErrInvalidEmail               = errors.New("Invalid Email Address")
-	ErrIncorrectEmailVerification = errors.New("Incorrect Verification Code")
+	ErrEmailTooLong               = errors.New("Email Too Long")
+	ErrEmailInvalid               = errors.New("Invalid Email Address")
+	ErrEmailVerificationIncorrect = errors.New("Incorrect Verification Code")
 )
 
 // This is not intended to validate every possible email address, instead a verification code will be sent to ensure the email works
 var emails = regexp.MustCompile(`^.+@.+$`)
 
 func ValidateEmail(email string) error {
+	if len(email) > MAXIMUM_EMAIL_LENGTH {
+		return ErrEmailTooLong
+	}
 	if email == "" || !emails.MatchString(email) {
-		return ErrInvalidEmail
+		return ErrEmailInvalid
 	}
 	return nil
 }

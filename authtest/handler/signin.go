@@ -130,7 +130,7 @@ func SignIn(t *testing.T, a func(*testing.T) authgo.Authenticator) {
 		assert.Equal(t, http.StatusOK, result.StatusCode)
 		body, err = io.ReadAll(result.Body)
 		assert.Nil(t, err)
-		assert.Equal(t, authgo.ErrIncorrectCredentials.Error(), string(body))
+		assert.Equal(t, authgo.ErrCredentialsIncorrect.Error(), string(body))
 	})
 	t.Run("Redirects When Password Is Wrong", func(t *testing.T) {
 		auth := a(t)
@@ -169,7 +169,7 @@ func SignIn(t *testing.T, a func(*testing.T) authgo.Authenticator) {
 		assert.Equal(t, http.StatusOK, result.StatusCode)
 		body, err = io.ReadAll(result.Body)
 		assert.Nil(t, err)
-		assert.Equal(t, authgo.ErrIncorrectCredentials.Error(), string(body))
+		assert.Equal(t, authgo.ErrCredentialsIncorrect.Error(), string(body))
 	})
 	t.Run("Redirects When Email Is Not Verified", func(t *testing.T) {
 		auth := a(t)

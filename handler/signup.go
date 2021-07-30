@@ -152,7 +152,7 @@ func SignUpVerification(a authgo.Authenticator, ts *template.Template) http.Hand
 			a.SetSignUpSessionError(token, "")
 
 			if strings.TrimSpace(r.FormValue("verification")) != challenge {
-				a.SetSignUpSessionError(token, authgo.ErrIncorrectEmailVerification.Error())
+				a.SetSignUpSessionError(token, authgo.ErrEmailVerificationIncorrect.Error())
 				redirect.SignUpVerification(w, r)
 				return
 			}

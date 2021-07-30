@@ -6,7 +6,7 @@ import (
 )
 
 var (
-	ErrIncorrectCredentials      = errors.New("Incorrect Credentials")
+	ErrCredentialsIncorrect      = errors.New("Incorrect Credentials")
 	ErrEmailAlreadyRegistered    = errors.New("Email Already Registered")
 	ErrUsernameAlreadyRegistered = errors.New("Username Already Registered")
 	ErrEmailNotRegistered        = errors.New("Email Not Registered")
