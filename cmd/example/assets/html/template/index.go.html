@@ -8,15 +8,15 @@
         <title>Example</title>
     </head>
     <body>
-        {{if .Account}}
+        {{if .Account -}}
         <h1>Hello {{.Account.Username}}!</h1>
         <a href="/account">Account</a>
         <a href="/sign-out">Sign Out</a>
-        {{else}}
+        {{- else -}}
         <h1>Hello World!</h1>
         <a href="/sign-in">Sign In</a>
         <a href="/sign-up">Sign Up</a>
-        {{end}}
+        {{- end}}
         <a href="/products">Products</a>
     </body>
 </html>

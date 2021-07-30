@@ -10,9 +10,9 @@
     <body>
         <h1>Account Recovery</h1>
 
-        {{if ne .Error ""}}
+        {{if ne .Error "" -}}
             <p class="error">{{.Error}}</p>
-        {{end}}
+        {{- end}}
 
         <p style="text-align: center;">Enter the email address associated with your account.</p>
 

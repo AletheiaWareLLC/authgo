@@ -10,11 +10,11 @@
     <body>
         <h1>Account Recovery Email Verification</h1>
 
-        {{if ne .Error ""}}
+        {{if ne .Error "" -}}
             <p class="error">{{.Error}}</p>
-        {{else}}
+        {{- else -}}
             <p style="text-align: center;">Your username is {{.Username}}</p>
-        {{end}}
+        {{- end}}
 
         <p style="text-align: center;">Verify your account by entering the verification code that was sent to your email address.</p>
 

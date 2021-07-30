@@ -14,7 +14,7 @@
                 <th class="leftcolumn">ID</th>
                 <th class="rightcolumn">Name</th>
             </tr>
-            {{range .Products}}
+            {{range .Products -}}
             <tr>
                 <td class="leftcolumn">
                     {{.ID}}
@@ -23,7 +23,7 @@
                     <a href="/product?id={{.ID}}">{{.Name}}</a>
                 </td>
             </tr>
-            {{end}}
+            {{- end}}
         </table>
     </body>
 </html>

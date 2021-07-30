@@ -10,9 +10,9 @@
     <body>
         <h1>Sign In</h1>
 
-        {{if ne .Error ""}}
+        {{if ne .Error "" -}}
             <p class="error">{{.Error}}</p>
-        {{end}}
+        {{- end}}
 
         <form action="/sign-in" method="post" id="sign-in-form">
             <!-- TODO(v2) add CSRF token
