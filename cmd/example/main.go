@@ -7,6 +7,7 @@ import (
 	"aletheiaware.com/authgo/cmd/example/model"
 	"aletheiaware.com/authgo/database"
 	authhandler "aletheiaware.com/authgo/handler"
+	"aletheiaware.com/netgo"
 	nethandler "aletheiaware.com/netgo/handler"
 	"crypto/tls"
 	"embed"
@@ -85,7 +86,7 @@ func main() {
 	handler.AttachIndexHandler(mux, auth, templates)
 
 	// Start Server
-	if authgo.Secure() {
+	if netgo.IsSecure() {
 		// Serve HTTPS Requests
 		config := &tls.Config{MinVersion: tls.VersionTLS10}
 		server := &http.Server{Addr: ":443",

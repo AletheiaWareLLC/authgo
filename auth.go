@@ -1,17 +1,10 @@
 package authgo
 
 import (
-	"aletheiaware.com/netgo"
 	"log"
 	"net/http"
-	"os"
 	"time"
 )
-
-func Secure() bool {
-	https, ok := os.LookupEnv(netgo.HTTPS)
-	return ok && https == "true"
-}
 
 type Authenticator interface {
 	CurrentAccount(w http.ResponseWriter, r *http.Request) *Account
