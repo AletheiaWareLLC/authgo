@@ -200,7 +200,9 @@ func (a *authenticator) LookupSignUpSession(token string) (string, string, strin
 
 func (a *authenticator) SetSignUpSessionError(token string, errmsg string) {
 	_, err := a.database.UpdateSignUpSessionError(token, errmsg)
-	log.Println(err)
+	if err != nil {
+		log.Println(err)
+	}
 }
 
 func (a *authenticator) SetSignUpSessionIdentity(token, email, username string) error {
@@ -255,7 +257,9 @@ func (a *authenticator) LookupSignInSession(token string) (string, bool, string,
 
 func (a *authenticator) SetSignInSessionError(token string, errmsg string) {
 	_, err := a.database.UpdateSignInSessionError(token, errmsg)
-	log.Println(err)
+	if err != nil {
+		log.Println(err)
+	}
 }
 
 func (a *authenticator) SetSignInSessionUsername(token string, username string) error {
@@ -310,7 +314,9 @@ func (a *authenticator) LookupAccountPasswordSession(token string) (string, stri
 
 func (a *authenticator) SetAccountPasswordSessionError(token string, errmsg string) {
 	_, err := a.database.UpdateAccountPasswordSessionError(token, errmsg)
-	log.Println(err)
+	if err != nil {
+		log.Println(err)
+	}
 }
 
 func (a authenticator) CurrentAccountRecoverySession(r *http.Request) (string, string, string, string, string) {
@@ -370,5 +376,7 @@ func (a *authenticator) SetAccountRecoverySessionChallenge(token, challenge stri
 
 func (a *authenticator) SetAccountRecoverySessionError(token string, errmsg string) {
 	_, err := a.database.UpdateAccountRecoverySessionError(token, errmsg)
-	log.Println(err)
+	if err != nil {
+		log.Println(err)
+	}
 }
