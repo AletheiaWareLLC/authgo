@@ -8,10 +8,15 @@
         <title>Example</title>
     </head>
     <body>
+
+        {{if not .Live -}}
+        <p class="beta">BETA</p>
+        {{- end}}
+
         <h1>Sign Out</h1>
 
         {{if ne .Error "" -}}
-            <p class="error">{{.Error}}</p>
+        <p class="error">{{.Error}}</p>
         {{- end}}
 
         <p style="text-align: center;">{{.Account.Username}} are you sure you want to sign out?</p>

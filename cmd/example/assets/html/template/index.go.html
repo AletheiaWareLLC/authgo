@@ -8,15 +8,26 @@
         <title>Example</title>
     </head>
     <body>
+
+        {{if not .Live -}}
+        <p class="beta">BETA</p>
+        {{- end}}
+
         {{if .Account -}}
         <h1>Hello {{.Account.Username}}!</h1>
-        <a href="/account">Account</a>
-        <a href="/sign-out">Sign Out</a>
+        <div style="text-align: center;">
+            <a href="/account">Account</a>
+            <a href="/sign-out">Sign Out</a>
+        </div>
         {{- else -}}
         <h1>Hello World!</h1>
-        <a href="/sign-in">Sign In</a>
-        <a href="/sign-up">Sign Up</a>
+        <div style="text-align: center;">
+            <a href="/sign-in">Sign In</a>
+            <a href="/sign-up">Sign Up</a>
+        </div>
         {{- end}}
-        <a href="/products">Products</a>
+        <div style="text-align: center;">
+            <a href="/products">Products</a>
+        </div>
     </body>
 </html>

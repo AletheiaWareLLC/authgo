@@ -1,14 +1,23 @@
+h1, h2, h3, h4, h5, h6 {
+    text-align: center;
+}
 table.center {
     margin-left: auto;
     margin-right: auto;
 }
-.leftcolumn {
+td.leftcolumn {
     text-align:right;
     width:50%
 }
-.rightcolumn {
+td.rightcolumn {
     text-align:left;
     width:50%
+}
+p.beta {
+    color: red;
+    font-size: x-small;
+    font-weight: bold;
+    text-align:center;
 }
 p.error {
     color: red;

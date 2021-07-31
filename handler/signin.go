@@ -3,6 +3,7 @@ package handler
 import (
 	"aletheiaware.com/authgo"
 	"aletheiaware.com/authgo/redirect"
+	"aletheiaware.com/netgo"
 	"aletheiaware.com/netgo/handler"
 	"html/template"
 	"log"
@@ -38,9 +39,11 @@ func SignIn(a authgo.Authenticator, ts *template.Template) http.Handler {
 				return
 			}
 			data := struct {
+				Live     bool
 				Username string
 				Error    string
 			}{
+				Live:     netgo.IsLive(),
 				Username: username,
 				Error:    errmsg,
 			}

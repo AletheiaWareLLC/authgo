@@ -4,6 +4,7 @@ import (
 	"aletheiaware.com/authgo"
 	"aletheiaware.com/authgo/cmd/example/model"
 	"aletheiaware.com/authgo/redirect"
+	"aletheiaware.com/netgo"
 	"aletheiaware.com/netgo/handler"
 	"html/template"
 	"log"
@@ -27,8 +28,10 @@ func Product(a authgo.Authenticator, p model.ProductManager, ts *template.Templa
 			return
 		}
 		data := struct {
+			Live    bool
 			Product *model.Product
 		}{
+			Live:    netgo.IsLive(),
 			Product: p,
 		}
 		if err := ts.ExecuteTemplate(w, "product.go.html", data); err != nil {

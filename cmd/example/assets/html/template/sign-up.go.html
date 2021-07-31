@@ -8,10 +8,15 @@
         <title>Example</title>
     </head>
     <body>
+
+        {{if not .Live -}}
+        <p class="beta">BETA</p>
+        {{- end}}
+
         <h1>Sign Up</h1>
 
         {{if ne .Error "" -}}
-            <p class="error">{{.Error}}</p>
+        <p class="error">{{.Error}}</p>
         {{- end}}
 
         <form action="/sign-up" method="post" id="sign-up-form">

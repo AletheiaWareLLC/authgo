@@ -3,6 +3,7 @@ package handler
 import (
 	"aletheiaware.com/authgo"
 	"aletheiaware.com/authgo/redirect"
+	"aletheiaware.com/netgo"
 	"aletheiaware.com/netgo/handler"
 	"html/template"
 	"log"
@@ -16,7 +17,6 @@ func AttachSignUpHandler(m *http.ServeMux, a authgo.Authenticator, ts *template.
 }
 
 func SignUp(a authgo.Authenticator, ts *template.Template) http.Handler {
-	ev := a.EmailVerifier()
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if a := a.CurrentAccount(w, r); a != nil {
 			// Already signed in
@@ -39,10 +39,12 @@ func SignUp(a authgo.Authenticator, ts *template.Template) http.Handler {
 				http.SetCookie(w, authgo.NewSignUpSessionCookie(token))
 			}
 			data := struct {
+				Live bool
 				Email,
 				Username,
 				Error string
 			}{
+				Live:     netgo.IsLive(),
 				Email:    email,
 				Username: username,
 				Error:    errmsg,
@@ -56,77 +58,63 @@ func SignUp(a authgo.Authenticator, ts *template.Template) http.Handler {
 				redirect.SignUp(w, r)
 				return
 			}
-			a.SetSignUpSessionError(token, "")
 
 			email := strings.TrimSpace(r.FormValue("email"))
 			username := strings.TrimSpace(r.FormValue("username"))
 			password := []byte(strings.TrimSpace(r.FormValue("password")))
 			confirmation := []byte(strings.TrimSpace(r.FormValue("confirmation")))
 
-			// Check valid email
-			if err := authgo.ValidateEmail(email); err != nil {
+			if err := signUp(a, token, email, username, password, confirmation); err != nil {
 				log.Println(err)
 				a.SetSignUpSessionError(token, err.Error())
 				redirect.SignUp(w, r)
 				return
 			}
-
-			// Check valid username
-			if err := authgo.ValidateUsername(username); err != nil {
-				log.Println(err)
-				a.SetSignUpSessionError(token, err.Error())
-				redirect.SignUp(w, r)
-				return
-			}
-
-			if err := a.SetSignUpSessionIdentity(token, email, username); err != nil {
-				log.Println(err)
-				a.SetSignUpSessionError(token, err.Error())
-				redirect.SignUp(w, r)
-				return
-			}
-
-			// Check valid password and matching confirm
-			if err := authgo.ValidatePassword(password); err != nil {
-				log.Println(err)
-				a.SetSignUpSessionError(token, err.Error())
-				redirect.SignUp(w, r)
-				return
-			}
-			if err := authgo.MatchPasswords(password, confirmation); err != nil {
-				log.Println(err)
-				a.SetSignUpSessionError(token, err.Error())
-				redirect.SignUp(w, r)
-				return
-			}
-
-			_, err := a.NewAccount(email, username, password)
-			// log.Println("NewAccount", acc, err)
-			if err != nil {
-				log.Println(err)
-				a.SetSignUpSessionError(token, err.Error())
-				redirect.SignUp(w, r)
-				return
-			}
-
-			code, err := ev.VerifyEmail(email)
-			// log.Println("VerifyEmail", code, err)
-			if err != nil {
-				log.Println(err)
-				a.SetSignUpSessionError(token, err.Error())
-				redirect.SignUp(w, r)
-				return
-			}
-			if err := a.SetSignUpSessionChallenge(token, code); err != nil {
-				log.Println(err)
-				a.SetSignUpSessionError(token, err.Error())
-				redirect.SignUp(w, r)
-				return
-			}
+			a.SetSignUpSessionError(token, "")
 
 			redirect.SignUpVerification(w, r)
 		}
 	})
+}
+
+func signUp(a authgo.Authenticator, token, email, username string, password, confirmation []byte) error {
+	// Check valid email
+	if err := authgo.ValidateEmail(email); err != nil {
+		return err
+	}
+
+	// Check valid username
+	if err := authgo.ValidateUsername(username); err != nil {
+		return err
+	}
+
+	if err := a.SetSignUpSessionIdentity(token, email, username); err != nil {
+		return err
+	}
+
+	// Check valid password and matching confirm
+	if err := authgo.ValidatePassword(password); err != nil {
+		return err
+	}
+	if err := authgo.MatchPasswords(password, confirmation); err != nil {
+		return err
+	}
+
+	_, err := a.NewAccount(email, username, password)
+	// log.Println("NewAccount", acc, err)
+	if err != nil {
+		return err
+	}
+
+	code, err := a.EmailVerifier().VerifyEmail(email)
+	// log.Println("VerifyEmail", code, err)
+	if err != nil {
+		return err
+	}
+	if err := a.SetSignUpSessionChallenge(token, code); err != nil {
+		return err
+	}
+	return nil
 }
 
 func SignUpVerification(a authgo.Authenticator, ts *template.Template) http.Handler {
@@ -140,8 +128,10 @@ func SignUpVerification(a authgo.Authenticator, ts *template.Template) http.Hand
 		switch r.Method {
 		case "GET":
 			data := struct {
+				Live  bool
 				Error string
 			}{
+				Live:  netgo.IsLive(),
 				Error: errmsg,
 			}
 			if err := ts.ExecuteTemplate(w, "sign-up-verification.go.html", data); err != nil {
@@ -149,13 +139,15 @@ func SignUpVerification(a authgo.Authenticator, ts *template.Template) http.Hand
 				return
 			}
 		case "POST":
-			a.SetSignUpSessionError(token, "")
+			verification := strings.TrimSpace(r.FormValue("verification"))
 
-			if strings.TrimSpace(r.FormValue("verification")) != challenge {
-				a.SetSignUpSessionError(token, authgo.ErrEmailVerificationIncorrect.Error())
+			if err := signUpVerification(challenge, verification); err != nil {
+				a.SetSignUpSessionError(token, err.Error())
 				redirect.SignUpVerification(w, r)
 				return
 			}
+
+			a.SetSignUpSessionError(token, "")
 
 			if err := a.SetEmailVerified(email, true); err != nil {
 				log.Println(err)
@@ -182,4 +174,11 @@ func SignUpVerification(a authgo.Authenticator, ts *template.Template) http.Hand
 			redirect.Account(w, r)
 		}
 	})
+}
+
+func signUpVerification(challenge, verification string) error {
+	if verification != challenge {
+		return authgo.ErrEmailVerificationIncorrect
+	}
+	return nil
 }

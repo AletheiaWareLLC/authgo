@@ -3,6 +3,7 @@ package handler
 import (
 	"aletheiaware.com/authgo"
 	"aletheiaware.com/authgo/redirect"
+	"aletheiaware.com/netgo"
 	"aletheiaware.com/netgo/handler"
 	"html/template"
 	"log"
@@ -25,9 +26,11 @@ func SignOut(a authgo.Authenticator, ts *template.Template) http.Handler {
 		switch r.Method {
 		case "GET":
 			data := struct {
+				Live    bool
 				Account *authgo.Account
 				Error   string
 			}{
+				Live:  netgo.IsLive(),
 				Error: errmsg,
 			}
 			account, err := a.LookupAccount(username)

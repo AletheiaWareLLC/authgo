@@ -3,6 +3,7 @@ package handler
 import (
 	"aletheiaware.com/authgo"
 	"aletheiaware.com/authgo/redirect"
+	"aletheiaware.com/netgo"
 	"aletheiaware.com/netgo/handler"
 	"html/template"
 	"log"
@@ -37,8 +38,10 @@ func AccountPassword(a authgo.Authenticator, ts *template.Template) http.Handler
 				http.SetCookie(w, authgo.NewAccountPasswordSessionCookie(token))
 			}
 			data := struct {
+				Live  bool
 				Error string
 			}{
+				Live:  netgo.IsLive(),
 				Error: errmsg,
 			}
 			if err := ts.ExecuteTemplate(w, "account-password.go.html", data); err != nil {
@@ -50,33 +53,35 @@ func AccountPassword(a authgo.Authenticator, ts *template.Template) http.Handler
 				redirect.AccountPassword(w, r)
 				return
 			}
-			a.SetAccountPasswordSessionError(token, "")
 
 			password := []byte(strings.TrimSpace(r.FormValue("password")))
 			confirmation := []byte(strings.TrimSpace(r.FormValue("confirmation")))
 
-			// Check valid password and matching confirm
-			if err := authgo.ValidatePassword(password); err != nil {
+			if err := accountPassword(a, username, password, confirmation); err != nil {
 				log.Println(err)
 				a.SetAccountPasswordSessionError(token, err.Error())
 				redirect.AccountPassword(w, r)
 				return
 			}
-			if err := authgo.MatchPasswords(password, confirmation); err != nil {
-				log.Println(err)
-				a.SetAccountPasswordSessionError(token, err.Error())
-				redirect.AccountPassword(w, r)
-				return
-			}
-
-			if err := a.ChangePassword(username, password); err != nil {
-				log.Println(err)
-				a.SetAccountPasswordSessionError(token, err.Error())
-				redirect.AccountPassword(w, r)
-				return
-			}
+			a.SetAccountPasswordSessionError(token, "")
 
 			redirect.Account(w, r)
 		}
 	})
+}
+
+func accountPassword(a authgo.Authenticator, username string, password, confirmation []byte) error {
+	// Check valid password and matching confirm
+	if err := authgo.ValidatePassword(password); err != nil {
+		return err
+	}
+	if err := authgo.MatchPasswords(password, confirmation); err != nil {
+		return err
+	}
+
+	if err := a.ChangePassword(username, password); err != nil {
+		return err
+	}
+
+	return nil
 }

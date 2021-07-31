@@ -8,6 +8,11 @@
         <title>Example Products</title>
     </head>
     <body>
+
+        {{if not .Live -}}
+        <p class="beta">BETA</p>
+        {{- end}}
+
         <h1>Products</h1>
         <table class="center">
             <tr>

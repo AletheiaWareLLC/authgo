@@ -8,6 +8,11 @@
         <title>Example Product</title>
     </head>
     <body>
+
+        {{if not .Live -}}
+        <p class="beta">BETA</p>
+        {{- end}}
+
         {{if not .Product -}}
         <p>Product not found</p>
         {{- else -}}

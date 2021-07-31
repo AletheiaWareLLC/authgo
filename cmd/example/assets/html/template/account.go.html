@@ -8,10 +8,17 @@
         <title>Example</title>
     </head>
     <body>
+
+        {{if not .Live -}}
+        <p class="beta">BETA</p>
+        {{- end}}
+
         <h1>Hello {{.Account.Username}}!</h1>
-        <a href="/account-password">Change Password</a>
-        <a href="/sign-out">Sign Out</a>
-        <a href="/">Home</a>
-        <a href="/products">Products</a>
+        <div style="text-align: center;">
+            <a href="/account-password">Change Password</a>
+            <a href="/sign-out">Sign Out</a>
+            <a href="/">Home</a>
+            <a href="/products">Products</a>
+        </div>
     </body>
 </html>

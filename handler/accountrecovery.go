@@ -3,6 +3,7 @@ package handler
 import (
 	"aletheiaware.com/authgo"
 	"aletheiaware.com/authgo/redirect"
+	"aletheiaware.com/netgo"
 	"aletheiaware.com/netgo/handler"
 	"html/template"
 	"log"
@@ -16,7 +17,6 @@ func AttachAccountRecoveryHandler(m *http.ServeMux, a authgo.Authenticator, ts *
 }
 
 func AccountRecovery(a authgo.Authenticator, ts *template.Template) http.Handler {
-	ev := a.EmailVerifier()
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if a := a.CurrentAccount(w, r); a != nil {
 			// Already signed in
@@ -39,9 +39,11 @@ func AccountRecovery(a authgo.Authenticator, ts *template.Template) http.Handler
 				http.SetCookie(w, authgo.NewAccountRecoverySessionCookie(token))
 			}
 			data := struct {
+				Live bool
 				Email,
 				Error string
 			}{
+				Live:  netgo.IsLive(),
 				Email: email,
 				Error: errmsg,
 			}
@@ -54,59 +56,52 @@ func AccountRecovery(a authgo.Authenticator, ts *template.Template) http.Handler
 				redirect.AccountRecovery(w, r)
 				return
 			}
-			a.SetAccountRecoverySessionError(token, "")
 
 			email := strings.TrimSpace(r.FormValue("email"))
 
-			if err := a.SetAccountRecoverySessionEmail(token, email); err != nil {
+			if err := accountRecovery(a, token, email); err != nil {
 				log.Println(err)
 				a.SetAccountRecoverySessionError(token, err.Error())
 				redirect.AccountRecovery(w, r)
 				return
 			}
 
-			// Check valid email
-			if err := authgo.ValidateEmail(email); err != nil {
-				log.Println(err)
-				a.SetAccountRecoverySessionError(token, err.Error())
-				redirect.AccountRecovery(w, r)
-				return
-			}
-
-			// Get username associated with email
-			username, err := a.LookupUsername(email)
-			if err != nil {
-				log.Println(err)
-				a.SetAccountRecoverySessionError(token, err.Error())
-				redirect.AccountRecovery(w, r)
-				return
-			}
-
-			if err := a.SetAccountRecoverySessionUsername(token, username); err != nil {
-				log.Println(err)
-				a.SetAccountRecoverySessionError(token, err.Error())
-				redirect.AccountRecovery(w, r)
-				return
-			}
-
-			code, err := ev.VerifyEmail(email)
-			// log.Println("VerifyEmail", code, err)
-			if err != nil {
-				log.Println(err)
-				a.SetAccountRecoverySessionError(token, err.Error())
-				redirect.AccountRecovery(w, r)
-				return
-			}
-			if err := a.SetAccountRecoverySessionChallenge(token, code); err != nil {
-				log.Println(err)
-				a.SetAccountRecoverySessionError(token, err.Error())
-				redirect.AccountRecovery(w, r)
-				return
-			}
+			a.SetAccountRecoverySessionError(token, "")
 
 			redirect.AccountRecoveryVerification(w, r)
 		}
 	})
+}
+
+func accountRecovery(a authgo.Authenticator, token, email string) error {
+	if err := a.SetAccountRecoverySessionEmail(token, email); err != nil {
+		return err
+	}
+
+	// Check valid email
+	if err := authgo.ValidateEmail(email); err != nil {
+		return err
+	}
+
+	// Get username associated with email
+	username, err := a.LookupUsername(email)
+	if err != nil {
+		return err
+	}
+
+	if err := a.SetAccountRecoverySessionUsername(token, username); err != nil {
+		return err
+	}
+
+	code, err := a.EmailVerifier().VerifyEmail(email)
+	// log.Println("VerifyEmail", code, err)
+	if err != nil {
+		return err
+	}
+	if err := a.SetAccountRecoverySessionChallenge(token, code); err != nil {
+		return err
+	}
+	return nil
 }
 
 func AccountRecoveryVerification(a authgo.Authenticator, ts *template.Template) http.Handler {
@@ -120,9 +115,11 @@ func AccountRecoveryVerification(a authgo.Authenticator, ts *template.Template) 
 		switch r.Method {
 		case "GET":
 			data := struct {
+				Live bool
 				Username,
 				Error string
 			}{
+				Live:     netgo.IsLive(),
 				Username: username,
 				Error:    errmsg,
 			}
@@ -131,13 +128,15 @@ func AccountRecoveryVerification(a authgo.Authenticator, ts *template.Template) 
 				return
 			}
 		case "POST":
-			a.SetAccountRecoverySessionError(token, "")
+			verification := strings.TrimSpace(r.FormValue("verification"))
 
-			if strings.TrimSpace(r.FormValue("verification")) != challenge {
-				a.SetAccountRecoverySessionError(token, authgo.ErrEmailVerificationIncorrect.Error())
+			if err := accountRecoveryVerification(challenge, verification); err != nil {
+				a.SetAccountRecoverySessionError(token, err.Error())
 				redirect.AccountRecoveryVerification(w, r)
 				return
 			}
+
+			a.SetAccountRecoverySessionError(token, "")
 
 			token, err := a.NewSignInSession(username)
 			// log.Println("NewSignInSession", token, err)
@@ -152,4 +151,11 @@ func AccountRecoveryVerification(a authgo.Authenticator, ts *template.Template) 
 			redirect.AccountPassword(w, r)
 		}
 	})
+}
+
+func accountRecoveryVerification(challenge, verification string) error {
+	if verification != challenge {
+		return authgo.ErrEmailVerificationIncorrect
+	}
+	return nil
 }

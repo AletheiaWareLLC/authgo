@@ -8,10 +8,15 @@
         <title>Example</title>
     </head>
     <body>
+
+        {{if not .Live -}}
+        <p class="beta">BETA</p>
+        {{- end}}
+
         <h1>Account Recovery</h1>
 
         {{if ne .Error "" -}}
-            <p class="error">{{.Error}}</p>
+        <p class="error">{{.Error}}</p>
         {{- end}}
 
         <p style="text-align: center;">Enter the email address associated with your account.</p>
