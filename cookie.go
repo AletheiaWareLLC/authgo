@@ -23,19 +23,3 @@ func NewCookie(name, value string, timeout time.Duration) *http.Cookie {
 		HttpOnly: true,
 	}
 }
-
-func NewSignUpSessionCookie(token string) *http.Cookie {
-	return NewCookie(COOKIE_SIGN_UP, token, SESSION_SIGN_UP_TIMEOUT)
-}
-
-func NewSignInSessionCookie(token string) *http.Cookie {
-	return NewCookie(COOKIE_SIGN_IN, token, SESSION_SIGN_IN_TIMEOUT)
-}
-
-func NewAccountPasswordSessionCookie(token string) *http.Cookie {
-	return NewCookie(COOKIE_ACCOUNT_PASSWORD, token, SESSION_ACCOUNT_PASSWORD_TIMEOUT)
-}
-
-func NewAccountRecoverySessionCookie(token string) *http.Cookie {
-	return NewCookie(COOKIE_ACCOUNT_RECOVERY, token, SESSION_ACCOUNT_RECOVERY_TIMEOUT)
-}

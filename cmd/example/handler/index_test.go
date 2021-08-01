@@ -1,7 +1,6 @@
 package handler_test
 
 import (
-	"aletheiaware.com/authgo"
 	"aletheiaware.com/authgo/authtest"
 	"aletheiaware.com/authgo/cmd/example/handler"
 	"github.com/stretchr/testify/assert"
@@ -16,13 +15,13 @@ func TestIndex(t *testing.T) {
 	tmpl, err := template.New("index.go.html").Parse(`{{with .Account}}{{.Username}}{{end}}`)
 	assert.Nil(t, err)
 	t.Run("Returns 200 When Signed In", func(t *testing.T) {
-		a := authtest.NewAuthenticator(t)
-		authtest.NewTestAccount(t, a)
-		token, _ := authtest.SignIn(t, a)
+		auth := authtest.NewAuthenticator(t)
+		authtest.NewTestAccount(t, auth)
+		token, _ := authtest.SignIn(t, auth)
 		mux := http.NewServeMux()
-		handler.AttachIndexHandler(mux, a, tmpl)
+		handler.AttachIndexHandler(mux, auth, tmpl)
 		request := httptest.NewRequest(http.MethodGet, "/", nil)
-		request.AddCookie(authgo.NewSignInSessionCookie(token))
+		request.AddCookie(auth.NewSignInSessionCookie(token))
 		response := httptest.NewRecorder()
 		mux.ServeHTTP(response, request)
 		result := response.Result()
@@ -32,9 +31,9 @@ func TestIndex(t *testing.T) {
 		assert.Equal(t, authtest.TEST_USERNAME, string(body))
 	})
 	t.Run("Returns 200 When Not Signed In", func(t *testing.T) {
-		a := authtest.NewAuthenticator(t)
+		auth := authtest.NewAuthenticator(t)
 		mux := http.NewServeMux()
-		handler.AttachIndexHandler(mux, a, tmpl)
+		handler.AttachIndexHandler(mux, auth, tmpl)
 		request := httptest.NewRequest(http.MethodGet, "/", nil)
 		response := httptest.NewRecorder()
 		mux.ServeHTTP(response, request)

@@ -16,8 +16,8 @@ func AttachSignOutHandler(m *http.ServeMux, a authgo.Authenticator, ts *template
 
 func SignOut(a authgo.Authenticator, ts *template.Template) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		token, username, authenticated, errmsg := a.CurrentSignInSession(r)
-		// log.Println("CurrentSignInSession", token, username, authenticated, errmsg)
+		token, username, authenticated, _, errmsg := a.CurrentSignInSession(r)
+		// log.Println("CurrentSignInSession", token, username, authenticated, created, errmsg)
 		if token == "" || username == "" || !authenticated {
 			// Not signed in
 			redirect.Index(w, r)

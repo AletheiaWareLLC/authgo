@@ -36,7 +36,7 @@ func AccountRecovery(a authgo.Authenticator, ts *template.Template) http.Handler
 					return
 				}
 				token = t
-				http.SetCookie(w, authgo.NewAccountRecoverySessionCookie(token))
+				http.SetCookie(w, a.NewAccountRecoverySessionCookie(token))
 			}
 			data := struct {
 				Live bool
@@ -146,7 +146,7 @@ func AccountRecoveryVerification(a authgo.Authenticator, ts *template.Template) 
 				return
 			}
 
-			http.SetCookie(w, authgo.NewSignInSessionCookie(token))
+			http.SetCookie(w, a.NewSignInSessionCookie(token))
 
 			redirect.AccountPassword(w, r)
 		}

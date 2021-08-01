@@ -1,7 +1,6 @@
 package handler_test
 
 import (
-	"aletheiaware.com/authgo"
 	"aletheiaware.com/authgo/authtest"
 	"aletheiaware.com/authgo/cmd/example/handler"
 	"aletheiaware.com/authgo/cmd/example/model"
@@ -17,10 +16,10 @@ func TestProducts(t *testing.T) {
 	tmpl, err := template.New("products.go.html").Parse(`<ol>{{range .Products}}<li>{{.ID}}{{.Name}}</li>{{end}}</ol>`)
 	assert.Nil(t, err)
 	t.Run("Redirects When Not Signed In", func(t *testing.T) {
-		a := authtest.NewAuthenticator(t)
+		auth := authtest.NewAuthenticator(t)
 		pm := model.NewInMemoryProductManager()
 		mux := http.NewServeMux()
-		handler.AttachProductsHandler(mux, a, pm, tmpl)
+		handler.AttachProductsHandler(mux, auth, pm, tmpl)
 		request := httptest.NewRequest(http.MethodGet, "/products", nil)
 		response := httptest.NewRecorder()
 		mux.ServeHTTP(response, request)
@@ -31,21 +30,19 @@ func TestProducts(t *testing.T) {
 		assert.Equal(t, "/sign-in", u.String())
 	})
 	t.Run("Returns 200 When Signed In", func(t *testing.T) {
-		a := authtest.NewAuthenticator(t)
-		authtest.NewTestAccount(t, a)
-		token, _ := authtest.SignIn(t, a)
+		auth := authtest.NewAuthenticator(t)
+		authtest.NewTestAccount(t, auth)
+		token, _ := authtest.SignIn(t, auth)
 		pm := model.NewInMemoryProductManager()
 		mux := http.NewServeMux()
-		handler.AttachProductsHandler(mux, a, pm, tmpl)
+		handler.AttachProductsHandler(mux, auth, pm, tmpl)
 		request := httptest.NewRequest(http.MethodGet, "/products", nil)
-		request.AddCookie(authgo.NewSignInSessionCookie(token))
+		cookie := auth.NewSignInSessionCookie(token)
+		request.AddCookie(cookie)
 		response := httptest.NewRecorder()
 		mux.ServeHTTP(response, request)
 		result := response.Result()
 		assert.Equal(t, http.StatusOK, result.StatusCode)
-		cookies := result.Cookies()
-		assert.Equal(t, 1, len(cookies))
-		assert.Equal(t, authgo.COOKIE_SIGN_IN, cookies[0].Name)
 		body, err := io.ReadAll(result.Body)
 		assert.Nil(t, err)
 		assert.Equal(t, "<ol></ol>", string(body))
@@ -55,7 +52,7 @@ func TestProducts(t *testing.T) {
 			Name: "FooBar",
 		})
 		request = httptest.NewRequest(http.MethodGet, "/products", nil)
-		request.AddCookie(cookies[0])
+		request.AddCookie(cookie)
 		response = httptest.NewRecorder()
 		mux.ServeHTTP(response, request)
 		result = response.Result()
@@ -65,20 +62,20 @@ func TestProducts(t *testing.T) {
 		assert.Equal(t, "<ol><li>10FooBar</li></ol>", string(body))
 	})
 	t.Run("Redirects When Signed Out", func(t *testing.T) {
-		a := authtest.NewAuthenticator(t)
-		authtest.NewTestAccount(t, a)
-		token, _ := authtest.SignIn(t, a)
+		auth := authtest.NewAuthenticator(t)
+		authtest.NewTestAccount(t, auth)
+		token, _ := authtest.SignIn(t, auth)
 		pm := model.NewInMemoryProductManager()
 		mux := http.NewServeMux()
-		handler.AttachProductsHandler(mux, a, pm, tmpl)
+		handler.AttachProductsHandler(mux, auth, pm, tmpl)
 		request := httptest.NewRequest(http.MethodGet, "/products", nil)
-		request.AddCookie(authgo.NewSignInSessionCookie(token))
+		request.AddCookie(auth.NewSignInSessionCookie(token))
 		response := httptest.NewRecorder()
 		mux.ServeHTTP(response, request)
 		result := response.Result()
 		assert.Equal(t, http.StatusOK, result.StatusCode)
 
-		authtest.SignOut(t, a, token)
+		authtest.SignOut(t, auth, token)
 
 		request = httptest.NewRequest(http.MethodGet, "/products", nil)
 		response = httptest.NewRecorder()

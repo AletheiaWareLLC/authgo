@@ -22,7 +22,7 @@ func Account(t *testing.T, a func(*testing.T) authgo.Authenticator) {
 		mux := http.NewServeMux()
 		handler.AttachAccountHandler(mux, auth, tmpl)
 		request := httptest.NewRequest(http.MethodGet, "/account", nil)
-		request.AddCookie(authgo.NewSignInSessionCookie(token))
+		request.AddCookie(auth.NewSignInSessionCookie(token))
 		response := httptest.NewRecorder()
 		mux.ServeHTTP(response, request)
 		result := response.Result()

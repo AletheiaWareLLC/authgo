@@ -36,7 +36,7 @@ func SignUp(a authgo.Authenticator, ts *template.Template) http.Handler {
 					return
 				}
 				token = t
-				http.SetCookie(w, authgo.NewSignUpSessionCookie(token))
+				http.SetCookie(w, a.NewSignUpSessionCookie(token))
 			}
 			data := struct {
 				Live bool
@@ -169,7 +169,7 @@ func SignUpVerification(a authgo.Authenticator, ts *template.Template) http.Hand
 				return
 			}
 
-			http.SetCookie(w, authgo.NewSignInSessionCookie(token))
+			http.SetCookie(w, a.NewSignInSessionCookie(token))
 
 			redirect.Account(w, r)
 		}

@@ -23,7 +23,7 @@ func SignIn(t *testing.T, a func(*testing.T) authgo.Authenticator) {
 		mux := http.NewServeMux()
 		handler.AttachSignInHandler(mux, auth, tmpl)
 		request := httptest.NewRequest(http.MethodGet, "/sign-in", nil)
-		request.AddCookie(authgo.NewSignInSessionCookie(token))
+		request.AddCookie(auth.NewSignInSessionCookie(token))
 		response := httptest.NewRecorder()
 		mux.ServeHTTP(response, request)
 		result := response.Result()

@@ -16,10 +16,9 @@ func AttachSignInHandler(m *http.ServeMux, a authgo.Authenticator, ts *template.
 }
 
 func SignIn(a authgo.Authenticator, ts *template.Template) http.Handler {
-	ev := a.EmailVerifier()
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		token, username, authenticated, errmsg := a.CurrentSignInSession(r)
-		// log.Println("CurrentSignInSession", token, username, authenticated, errmsg)
+		token, username, authenticated, _, errmsg := a.CurrentSignInSession(r)
+		// log.Println("CurrentSignInSession", token, username, authenticated, created, errmsg)
 		switch r.Method {
 		case "GET":
 			if token == "" {
@@ -31,7 +30,7 @@ func SignIn(a authgo.Authenticator, ts *template.Template) http.Handler {
 					return
 				}
 				token = t
-				http.SetCookie(w, authgo.NewSignInSessionCookie(token))
+				http.SetCookie(w, a.NewSignInSessionCookie(token))
 			}
 			if authenticated {
 				// Already signed in
@@ -97,9 +96,9 @@ func SignIn(a authgo.Authenticator, ts *template.Template) http.Handler {
 					http.Error(w, http.StatusText(http.StatusNotFound), http.StatusNotFound)
 				}
 
-				http.SetCookie(w, authgo.NewSignUpSessionCookie(token))
+				http.SetCookie(w, a.NewSignUpSessionCookie(token))
 
-				code, err := ev.VerifyEmail(account.Email)
+				code, err := a.EmailVerifier().VerifyEmail(account.Email)
 				// log.Println("VerifyEmail", code, err)
 				if err != nil {
 					log.Println(err)

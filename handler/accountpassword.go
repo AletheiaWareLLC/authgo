@@ -35,7 +35,7 @@ func AccountPassword(a authgo.Authenticator, ts *template.Template) http.Handler
 					return
 				}
 				token = t
-				http.SetCookie(w, authgo.NewAccountPasswordSessionCookie(token))
+				http.SetCookie(w, a.NewAccountPasswordSessionCookie(token))
 			}
 			data := struct {
 				Live  bool
