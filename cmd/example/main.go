@@ -88,7 +88,7 @@ func main() {
 	// Start Server
 	if netgo.IsSecure() {
 		// Serve HTTPS Requests
-		config := &tls.Config{MinVersion: tls.VersionTLS10}
+		config := &tls.Config{MinVersion: tls.VersionTLS12}
 		server := &http.Server{Addr: ":443",
 			Handler:           mux,
 			TLSConfig:         config,
