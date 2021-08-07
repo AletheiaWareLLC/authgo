@@ -22,6 +22,9 @@ func TestValidateUsername(t *testing.T) {
 		assert.Nil(t, authgo.ValidateUsername("AlIcE"))
 		assert.Nil(t, authgo.ValidateUsername("BoB"))
 		assert.Nil(t, authgo.ValidateUsername("ChArLiE"))
+		assert.Nil(t, authgo.ValidateUsername("alice1234"))
+		assert.Nil(t, authgo.ValidateUsername("1b2o3b4"))
+		assert.Nil(t, authgo.ValidateUsername("12charlie34"))
 	})
 	t.Run("Invalid", func(t *testing.T) {
 		for name, username := range map[string]string{
@@ -59,6 +62,8 @@ func TestValidateUsername(t *testing.T) {
 			"coma":        "a,b",
 			"graveaccent": "a`b",
 			"tilde":       "a~b",
+			"tab":         "a\tb",
+			"newline":     "a\nb",
 		} {
 			t.Run(name, func(t *testing.T) {
 				assert.Equal(t, authgo.ErrUsernameInvalid, authgo.ValidateUsername(username))
