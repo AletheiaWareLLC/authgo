@@ -9,6 +9,36 @@ import (
 	"net/smtp"
 )
 
+func SendEmail(server, identity, sender, recipient string, body *template.Template, data interface{}) error {
+	var buffer bytes.Buffer
+	if err := body.Execute(&buffer, data); err != nil {
+		return err
+	}
+	c, err := smtp.Dial(server)
+	if err != nil {
+		return err
+	}
+	defer c.Close()
+	if err := c.Hello(identity); err != nil {
+		return err
+	}
+	if err := c.Mail(sender); err != nil {
+		return err
+	}
+	if err := c.Rcpt(recipient); err != nil {
+		return err
+	}
+	wc, err := c.Data()
+	if err != nil {
+		return err
+	}
+	defer wc.Close()
+	if _, err := buffer.WriteTo(wc); err != nil {
+		return err
+	}
+	return nil
+}
+
 type SmtpEmailVerifier struct {
 	Server   string
 	Identity string
@@ -41,30 +71,7 @@ func (v SmtpEmailVerifier) VerifyEmail(email string) (string, error) {
 		To:   email,
 		Code: code,
 	}
-	var buffer bytes.Buffer
-	if err := v.Template.Execute(&buffer, data); err != nil {
-		return "", err
-	}
-	c, err := smtp.Dial(v.Server)
-	if err != nil {
-		return "", err
-	}
-	defer c.Close()
-	if err := c.Hello(v.Identity); err != nil {
-		return "", err
-	}
-	if err := c.Mail(v.Sender); err != nil {
-		return "", err
-	}
-	if err := c.Rcpt(email); err != nil {
-		return "", err
-	}
-	wc, err := c.Data()
-	if err != nil {
-		return "", err
-	}
-	defer wc.Close()
-	if _, err := buffer.WriteTo(wc); err != nil {
+	if err := SendEmail(v.Server, v.Identity, v.Sender, email, v.Template, data); err != nil {
 		return "", err
 	}
 	return code, nil
