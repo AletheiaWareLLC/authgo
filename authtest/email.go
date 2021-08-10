@@ -10,6 +10,6 @@ func NewEmailVerifier() authgo.EmailVerifier {
 
 type emailVerifier struct{}
 
-func (v *emailVerifier) VerifyEmail(email string) (string, error) {
+func (v *emailVerifier) Verify(email, username string) (string, error) {
 	return TEST_CHALLENGE, authgo.ValidateEmail(email)
 }

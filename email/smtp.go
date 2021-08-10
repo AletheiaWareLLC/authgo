@@ -55,7 +55,7 @@ func NewSmtpEmailVerifier(server, identity, sender string, template *template.Te
 	}
 }
 
-func (v SmtpEmailVerifier) VerifyEmail(email string) (string, error) {
+func (v SmtpEmailVerifier) Verify(email, username string) (string, error) {
 	code, err := cryptogo.RandomString(authgo.VERIFICATION_CODE_LENGTH)
 	if err != nil {
 		return "", err
@@ -63,13 +63,15 @@ func (v SmtpEmailVerifier) VerifyEmail(email string) (string, error) {
 	code = code[:authgo.VERIFICATION_CODE_LENGTH]
 	log.Println("Verifying Email:", email, "Code:", code)
 	data := struct {
-		From string
-		To   string
-		Code string
+		From     string
+		To       string
+		Username string
+		Code     string
 	}{
-		From: v.Sender,
-		To:   email,
-		Code: code,
+		From:     v.Sender,
+		To:       email,
+		Username: username,
+		Code:     code,
 	}
 	if err := SendEmail(v.Server, v.Identity, v.Sender, email, v.Template, data); err != nil {
 		return "", err

@@ -93,8 +93,8 @@ func accountRecovery(a authgo.Authenticator, token, email string) error {
 		return err
 	}
 
-	code, err := a.EmailVerifier().VerifyEmail(email)
-	// log.Println("VerifyEmail", code, err)
+	code, err := a.EmailVerifier().Verify(email, username)
+	// log.Println("Verify", email, username, code, err)
 	if err != nil {
 		return err
 	}

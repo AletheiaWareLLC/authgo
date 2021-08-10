@@ -30,5 +30,5 @@ func ValidateEmail(email string) error {
 }
 
 type EmailVerifier interface {
-	VerifyEmail(email string) (string, error)
+	Verify(email, username string) (string, error)
 }

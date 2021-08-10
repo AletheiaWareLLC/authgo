@@ -106,8 +106,8 @@ func signUp(a authgo.Authenticator, token, email, username string, password, con
 		return err
 	}
 
-	code, err := a.EmailVerifier().VerifyEmail(email)
-	// log.Println("VerifyEmail", code, err)
+	code, err := a.EmailVerifier().Verify(email, username)
+	// log.Println("VerifyEmail", email, username, code, err)
 	if err != nil {
 		return err
 	}

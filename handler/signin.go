@@ -98,8 +98,8 @@ func SignIn(a authgo.Authenticator, ts *template.Template) http.Handler {
 
 				http.SetCookie(w, a.NewSignUpSessionCookie(token))
 
-				code, err := a.EmailVerifier().VerifyEmail(account.Email)
-				// log.Println("VerifyEmail", code, err)
+				code, err := a.EmailVerifier().Verify(account.Email, account.Username)
+				// log.Println("Verify", account.Email, account.Username, code, err)
 				if err != nil {
 					log.Println(err)
 					a.SetSignUpSessionError(token, err.Error())
