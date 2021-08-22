@@ -11,7 +11,7 @@ type Authenticator interface {
 	NewAccount(string, string, []byte) (*Account, error)
 	LookupAccount(string) (*Account, error)
 	AuthenticateAccount(string, []byte) (*Account, error)
-	LookupUsername(string) (string, error)
+	LookupUsernameForEmail(string) (string, error)
 	ChangePassword(string, []byte) error
 
 	IsEmailVerified(string) bool
@@ -150,8 +150,8 @@ func (a *authenticator) AuthenticateAccount(username string, password []byte) (*
 	}, nil
 }
 
-func (a *authenticator) LookupUsername(email string) (string, error) {
-	return a.database.LookupUsername(email)
+func (a *authenticator) LookupUsernameForEmail(email string) (string, error) {
+	return a.database.SelectUsernameByEmail(email)
 }
 
 func (a *authenticator) ChangePassword(username string, password []byte) error {

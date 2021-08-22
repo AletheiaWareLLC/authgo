@@ -84,7 +84,7 @@ func accountRecovery(a authgo.Authenticator, token, email string) error {
 	}
 
 	// Get username associated with email
-	username, err := a.LookupUsername(email)
+	username, err := a.LookupUsernameForEmail(email)
 	if err != nil {
 		return err
 	}

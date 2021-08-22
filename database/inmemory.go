@@ -118,7 +118,7 @@ func (db *InMemory) SelectUser(username string) (int64, string, []byte, time.Tim
 	return id, email, password, created, nil
 }
 
-func (db *InMemory) LookupUsername(email string) (string, error) {
+func (db *InMemory) SelectUsernameByEmail(email string) (string, error) {
 	username, ok := db.AccountUsername[email]
 	if !ok {
 		return "", authgo.ErrEmailNotRegistered
