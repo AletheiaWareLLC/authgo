@@ -27,7 +27,7 @@ func TestProducts(t *testing.T) {
 		assert.Equal(t, http.StatusFound, result.StatusCode)
 		u, err := result.Location()
 		assert.Nil(t, err)
-		assert.Equal(t, "/sign-in", u.String())
+		assert.Equal(t, "/sign-in?next=%2Fproducts", u.String())
 	})
 	t.Run("Returns 200 When Signed In", func(t *testing.T) {
 		auth := authtest.NewAuthenticator(t)
@@ -84,6 +84,6 @@ func TestProducts(t *testing.T) {
 		assert.Equal(t, http.StatusFound, result.StatusCode)
 		u, err := result.Location()
 		assert.Nil(t, err)
-		assert.Equal(t, "/sign-in", u.String())
+		assert.Equal(t, "/sign-in?next=%2Fproducts", u.String())
 	})
 }

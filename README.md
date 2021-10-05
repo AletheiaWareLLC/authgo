@@ -45,7 +45,7 @@ handler.AttachAuthenticationHandlers(mux, auth, templates)
 mux.Handle("/greeter", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
     account := auth.CurrentAccount(w, r)
     if account == nil {
-        redirect.SignIn(w, r)
+        redirect.SignIn(w, r, r.URL.String())
         return
     }
     // Request is authorized, greet the user

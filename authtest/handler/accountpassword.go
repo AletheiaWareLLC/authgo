@@ -44,7 +44,7 @@ func AccountPassword(t *testing.T, a func(*testing.T) authgo.Authenticator) {
 		assert.Equal(t, http.StatusFound, result.StatusCode)
 		u, err := result.Location()
 		assert.Nil(t, err)
-		assert.Equal(t, "/sign-in", u.String())
+		assert.Equal(t, "/sign-in?next=%2Faccount-password", u.String())
 	})
 	t.Run("Redirects After Password Change", func(t *testing.T) {
 		auth := a(t)

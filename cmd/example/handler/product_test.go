@@ -27,7 +27,7 @@ func TestProduct(t *testing.T) {
 		assert.Equal(t, http.StatusFound, result.StatusCode)
 		u, err := result.Location()
 		assert.Nil(t, err)
-		assert.Equal(t, "/sign-in", u.String())
+		assert.Equal(t, "/sign-in?next=%2Fproduct%3Fid%3D10", u.String())
 	})
 	t.Run("Returns 404 When Signed In and Product Does Not Exist", func(t *testing.T) {
 		auth := authtest.NewAuthenticator(t)
@@ -91,6 +91,6 @@ func TestProduct(t *testing.T) {
 		assert.Equal(t, http.StatusFound, result.StatusCode)
 		u, err := result.Location()
 		assert.Nil(t, err)
-		assert.Equal(t, "/sign-in", u.String())
+		assert.Equal(t, "/sign-in?next=%2Fproduct%3Fid%3D10", u.String())
 	})
 }

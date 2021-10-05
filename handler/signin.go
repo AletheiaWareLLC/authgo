@@ -8,6 +8,7 @@ import (
 	"html/template"
 	"log"
 	"net/http"
+	"net/url"
 	"strings"
 )
 
@@ -19,6 +20,12 @@ func SignIn(a authgo.Authenticator, ts *template.Template) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		token, username, authenticated, _, errmsg := a.CurrentSignInSession(r)
 		// log.Println("CurrentSignInSession", token, username, authenticated, created, errmsg)
+		next, err := url.QueryUnescape(strings.TrimSpace(r.FormValue("next")))
+		if err != nil {
+			log.Println(err)
+			http.Error(w, http.StatusText(http.StatusNotFound), http.StatusNotFound)
+			return
+		}
 		switch r.Method {
 		case "GET":
 			if token == "" {
@@ -41,10 +48,12 @@ func SignIn(a authgo.Authenticator, ts *template.Template) http.Handler {
 				Live     bool
 				Username string
 				Error    string
+				Next     string
 			}{
 				Live:     netgo.IsLive(),
 				Username: username,
 				Error:    errmsg,
+				Next:     next,
 			}
 			if err := ts.ExecuteTemplate(w, "sign-in.go.html", data); err != nil {
 				log.Println(err)
@@ -52,7 +61,7 @@ func SignIn(a authgo.Authenticator, ts *template.Template) http.Handler {
 			}
 		case "POST":
 			if token == "" {
-				redirect.SignIn(w, r)
+				redirect.SignIn(w, r, next)
 				return
 			}
 			a.SetSignInSessionError(token, "")
@@ -63,7 +72,7 @@ func SignIn(a authgo.Authenticator, ts *template.Template) http.Handler {
 			if err := a.SetSignInSessionUsername(token, username); err != nil {
 				log.Println(err)
 				a.SetSignInSessionError(token, err.Error())
-				redirect.SignIn(w, r)
+				redirect.SignIn(w, r, next)
 				return
 			}
 
@@ -72,14 +81,14 @@ func SignIn(a authgo.Authenticator, ts *template.Template) http.Handler {
 			if err != nil {
 				log.Println(err)
 				a.SetSignInSessionError(token, err.Error())
-				redirect.SignIn(w, r)
+				redirect.SignIn(w, r, next)
 				return
 			}
 
 			if err := a.SetSignInSessionAuthenticated(token, true); err != nil {
 				log.Println(err)
 				a.SetSignInSessionError(token, err.Error())
-				redirect.SignIn(w, r)
+				redirect.SignIn(w, r, next)
 				return
 			}
 
@@ -103,19 +112,23 @@ func SignIn(a authgo.Authenticator, ts *template.Template) http.Handler {
 				if err != nil {
 					log.Println(err)
 					a.SetSignUpSessionError(token, err.Error())
-					redirect.SignIn(w, r)
+					redirect.SignIn(w, r, next)
 					return
 				}
 				if err := a.SetSignUpSessionChallenge(token, code); err != nil {
 					log.Println(err)
 					a.SetSignUpSessionError(token, err.Error())
-					redirect.SignIn(w, r)
+					redirect.SignIn(w, r, next)
 					return
 				}
 				redirect.SignUpVerification(w, r)
 				return
 			}
-			redirect.Account(w, r)
+			if next == "" {
+				redirect.Account(w, r)
+			} else {
+				http.Redirect(w, r, next, http.StatusFound)
+			}
 		}
 	})
 }

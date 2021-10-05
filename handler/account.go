@@ -18,7 +18,7 @@ func Account(a authgo.Authenticator, ts *template.Template) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		account := a.CurrentAccount(w, r)
 		if account == nil {
-			redirect.SignIn(w, r)
+			redirect.SignIn(w, r, r.URL.String())
 			return
 		}
 		data := struct {

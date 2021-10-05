@@ -19,7 +19,7 @@ func Product(a authgo.Authenticator, p model.ProductManager, ts *template.Templa
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		account := a.CurrentAccount(w, r)
 		if account == nil {
-			redirect.SignIn(w, r)
+			redirect.SignIn(w, r, r.URL.String())
 			return
 		}
 		p := p.Product(r.FormValue("id"))
