@@ -28,17 +28,6 @@ func SignIn(a authgo.Authenticator, ts *template.Template) http.Handler {
 		}
 		switch r.Method {
 		case "GET":
-			if token == "" {
-				t, err := a.NewSignInSession("")
-				// log.Println("NewSignInSession", t, err)
-				if err != nil {
-					log.Println(err)
-					http.Error(w, http.StatusText(http.StatusNotFound), http.StatusNotFound)
-					return
-				}
-				token = t
-				http.SetCookie(w, a.NewSignInSessionCookie(token))
-			}
 			if authenticated {
 				// Already signed in
 				redirect.Account(w, r)
@@ -61,8 +50,15 @@ func SignIn(a authgo.Authenticator, ts *template.Template) http.Handler {
 			}
 		case "POST":
 			if token == "" {
-				redirect.SignIn(w, r, next)
-				return
+				t, err := a.NewSignInSession("")
+				// log.Println("NewSignInSession", t, err)
+				if err != nil {
+					log.Println(err)
+					http.Error(w, http.StatusText(http.StatusNotFound), http.StatusNotFound)
+					return
+				}
+				token = t
+				http.SetCookie(w, a.NewSignInSessionCookie(token))
 			}
 			a.SetSignInSessionError(token, "")
 

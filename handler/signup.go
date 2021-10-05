@@ -27,17 +27,6 @@ func SignUp(a authgo.Authenticator, ts *template.Template) http.Handler {
 		// log.Println("CurrentSignUpSession", token, email, username, challenge, errmsg)
 		switch r.Method {
 		case "GET":
-			if token == "" {
-				t, err := a.NewSignUpSession()
-				// log.Println("NewSignUpSession", t, err)
-				if err != nil {
-					log.Println(err)
-					http.Error(w, http.StatusText(http.StatusNotFound), http.StatusNotFound)
-					return
-				}
-				token = t
-				http.SetCookie(w, a.NewSignUpSessionCookie(token))
-			}
 			data := struct {
 				Live bool
 				Email,
@@ -55,8 +44,15 @@ func SignUp(a authgo.Authenticator, ts *template.Template) http.Handler {
 			}
 		case "POST":
 			if token == "" {
-				redirect.SignUp(w, r)
-				return
+				t, err := a.NewSignUpSession()
+				// log.Println("NewSignUpSession", t, err)
+				if err != nil {
+					log.Println(err)
+					http.Error(w, http.StatusText(http.StatusNotFound), http.StatusNotFound)
+					return
+				}
+				token = t
+				http.SetCookie(w, a.NewSignUpSessionCookie(token))
 			}
 
 			email := strings.TrimSpace(r.FormValue("email"))

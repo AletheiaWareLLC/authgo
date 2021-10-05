@@ -27,17 +27,6 @@ func AccountRecovery(a authgo.Authenticator, ts *template.Template) http.Handler
 		// log.Println("CurrentAccountRecoverySession", token, email, username, challenge, errmsg)
 		switch r.Method {
 		case "GET":
-			if token == "" {
-				t, err := a.NewAccountRecoverySession()
-				// log.Println("NewAccountRecoverySession", t, err)
-				if err != nil {
-					log.Println(err)
-					http.Error(w, http.StatusText(http.StatusNotFound), http.StatusNotFound)
-					return
-				}
-				token = t
-				http.SetCookie(w, a.NewAccountRecoverySessionCookie(token))
-			}
 			data := struct {
 				Live bool
 				Email,
@@ -53,8 +42,15 @@ func AccountRecovery(a authgo.Authenticator, ts *template.Template) http.Handler
 			}
 		case "POST":
 			if token == "" {
-				redirect.AccountRecovery(w, r)
-				return
+				t, err := a.NewAccountRecoverySession()
+				// log.Println("NewAccountRecoverySession", t, err)
+				if err != nil {
+					log.Println(err)
+					http.Error(w, http.StatusText(http.StatusNotFound), http.StatusNotFound)
+					return
+				}
+				token = t
+				http.SetCookie(w, a.NewAccountRecoverySessionCookie(token))
 			}
 
 			email := strings.TrimSpace(r.FormValue("email"))

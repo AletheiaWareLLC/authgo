@@ -26,17 +26,6 @@ func AccountPassword(a authgo.Authenticator, ts *template.Template) http.Handler
 		// log.Println("CurrentAccountPasswordSession", token, username, errmsg)
 		switch r.Method {
 		case "GET":
-			if token == "" {
-				t, err := a.NewAccountPasswordSession(account.Username)
-				// log.Println("NewAccountPasswordSession", t, err)
-				if err != nil {
-					log.Println(err)
-					http.Error(w, http.StatusText(http.StatusNotFound), http.StatusNotFound)
-					return
-				}
-				token = t
-				http.SetCookie(w, a.NewAccountPasswordSessionCookie(token))
-			}
 			data := struct {
 				Live  bool
 				Error string
@@ -50,8 +39,16 @@ func AccountPassword(a authgo.Authenticator, ts *template.Template) http.Handler
 			}
 		case "POST":
 			if token == "" {
-				redirect.AccountPassword(w, r)
-				return
+				username = account.Username
+				t, err := a.NewAccountPasswordSession(username)
+				// log.Println("NewAccountPasswordSession", t, err)
+				if err != nil {
+					log.Println(err)
+					http.Error(w, http.StatusText(http.StatusNotFound), http.StatusNotFound)
+					return
+				}
+				token = t
+				http.SetCookie(w, a.NewAccountPasswordSessionCookie(token))
 			}
 
 			password := []byte(strings.TrimSpace(r.FormValue("password")))
