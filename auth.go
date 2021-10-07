@@ -110,7 +110,7 @@ func (a *authenticator) NewAccount(email, username string, password []byte) (*Ac
 	if err != nil {
 		return nil, err
 	}
-	log.Println("Created Account", id)
+	log.Println("Created Account", id, "for", username)
 	acc := &Account{
 		ID:       id,
 		Email:    email,
@@ -285,7 +285,7 @@ func (a *authenticator) NewSignInSession(username string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	log.Println("Created Sign In", id)
+	log.Println("Created Sign In", id, "for", username)
 
 	return token, nil
 }
@@ -354,7 +354,7 @@ func (a *authenticator) NewAccountPasswordSession(username string) (string, erro
 	if err != nil {
 		return "", err
 	}
-	log.Println("Created Account Password", id)
+	log.Println("Created Account Password", id, "for", username)
 
 	return token, nil
 }
