@@ -193,12 +193,10 @@ func (db *InMemory) UpdateSignUpSessionChallenge(token, challenge string) (int64
 	return 1, nil
 }
 
-func (db *InMemory) CreateSignInSession(token string, username string, created time.Time) (int64, error) {
+func (db *InMemory) CreateSignInSession(token string, username string, authenticated bool, created time.Time) (int64, error) {
 	db.SigninToken[token] = true
-	if username != "" {
-		db.SigninUsername[token] = username
-		db.SigninAuth[token] = true
-	}
+	db.SigninUsername[token] = username
+	db.SigninAuth[token] = authenticated
 	db.SigninCreated[token] = created
 	return 1, nil
 }
@@ -210,8 +208,8 @@ func (db *InMemory) SelectSignInSession(token string) (string, string, time.Time
 	errmsg := db.SigninError[token]
 	username := db.SigninUsername[token]
 	created := db.SigninCreated[token]
-	authorized := db.SigninAuth[token]
-	return errmsg, username, created, authorized, nil
+	authenticated := db.SigninAuth[token]
+	return errmsg, username, created, authenticated, nil
 }
 
 func (db *InMemory) UpdateSignInSessionError(token, errmsg string) (int64, error) {
@@ -230,11 +228,11 @@ func (db *InMemory) UpdateSignInSessionUsername(token, username string) (int64, 
 	return 1, nil
 }
 
-func (db *InMemory) UpdateSignInSessionAuthenticated(token string, authorized bool) (int64, error) {
+func (db *InMemory) UpdateSignInSessionAuthenticated(token string, authenticated bool) (int64, error) {
 	if _, ok := db.SigninToken[token]; !ok {
 		return 0, ErrNoSuchRecord
 	}
-	db.SigninAuth[token] = authorized
+	db.SigninAuth[token] = authenticated
 	return 1, nil
 }
 

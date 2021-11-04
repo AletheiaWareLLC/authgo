@@ -19,7 +19,7 @@ type Database interface {
 	UpdateSignUpSessionIdentity(string, string, string) (int64, error)
 	UpdateSignUpSessionChallenge(string, string) (int64, error)
 
-	CreateSignInSession(string, string, time.Time) (int64, error)
+	CreateSignInSession(string, string, bool, time.Time) (int64, error)
 	SelectSignInSession(string) (string, string, time.Time, bool, error)
 	UpdateSignInSessionError(string, string) (int64, error)
 	UpdateSignInSessionUsername(string, string) (int64, error)

@@ -134,7 +134,7 @@ func AccountRecoveryVerification(a authgo.Authenticator, ts *template.Template) 
 
 			a.SetAccountRecoverySessionError(token, "")
 
-			token, err := a.NewSignInSession(username)
+			token, err := a.NewSignInSession(username, true)
 			// log.Println("NewSignInSession", token, err)
 			if err != nil {
 				log.Println(err)

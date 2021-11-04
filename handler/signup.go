@@ -151,15 +151,9 @@ func SignUpVerification(a authgo.Authenticator, ts *template.Template) http.Hand
 				return
 			}
 
-			token, err := a.NewSignInSession(username)
+			token, err := a.NewSignInSession(username, true)
 			// log.Println("NewSignInSession", token, err)
 			if err != nil {
-				log.Println(err)
-				http.Error(w, http.StatusText(http.StatusNotFound), http.StatusNotFound)
-				return
-			}
-
-			if err := a.SetSignInSessionAuthenticated(token, true); err != nil {
 				log.Println(err)
 				http.Error(w, http.StatusText(http.StatusNotFound), http.StatusNotFound)
 				return

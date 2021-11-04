@@ -49,8 +49,11 @@ func SignIn(a authgo.Authenticator, ts *template.Template) http.Handler {
 				return
 			}
 		case "POST":
+			username := strings.TrimSpace(r.FormValue("username"))
+			password := []byte(strings.TrimSpace(r.FormValue("password")))
+
 			if token == "" {
-				t, err := a.NewSignInSession("")
+				t, err := a.NewSignInSession(username, false)
 				// log.Println("NewSignInSession", t, err)
 				if err != nil {
 					log.Println(err)
@@ -59,17 +62,14 @@ func SignIn(a authgo.Authenticator, ts *template.Template) http.Handler {
 				}
 				token = t
 				http.SetCookie(w, a.NewSignInSessionCookie(token))
-			}
-			a.SetSignInSessionError(token, "")
-
-			username := strings.TrimSpace(r.FormValue("username"))
-			password := []byte(strings.TrimSpace(r.FormValue("password")))
-
-			if err := a.SetSignInSessionUsername(token, username); err != nil {
-				log.Println(err)
-				a.SetSignInSessionError(token, err.Error())
-				redirect.SignIn(w, r, next)
-				return
+			} else {
+				if err := a.SetSignInSessionUsername(token, username); err != nil {
+					log.Println(err)
+					a.SetSignInSessionError(token, err.Error())
+					redirect.SignIn(w, r, next)
+					return
+				}
+				a.SetSignInSessionError(token, "")
 			}
 
 			account, err := a.AuthenticateAccount(username, password)

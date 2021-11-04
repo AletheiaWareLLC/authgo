@@ -32,7 +32,7 @@ type Authenticator interface {
 	SetSignInSessionTimeout(time.Duration)
 	NewSignInSessionCookie(string) *http.Cookie
 	CurrentSignInSession(*http.Request) (string, string, bool, time.Time, string)
-	NewSignInSession(string) (string, error)
+	NewSignInSession(string, bool) (string, error)
 	LookupSignInSession(string) (string, bool, time.Time, string, bool)
 	SetSignInSessionUsername(string, string) error
 	SetSignInSessionAuthenticated(string, bool) error
@@ -86,7 +86,7 @@ func (a *authenticator) CurrentAccount(w http.ResponseWriter, r *http.Request) *
 	if created.Add(a.signInSessionTimeout * 2 / 3).Before(time.Now()) {
 		// Refresh sign in session if it is close to expiring
 		a.SetSignInSessionAuthenticated(token, false)
-		token, err := a.NewSignInSession(username)
+		token, err := a.NewSignInSession(username, true)
 		if err != nil {
 			log.Println(err)
 			return nil
@@ -275,13 +275,13 @@ func (a authenticator) CurrentSignInSession(r *http.Request) (string, string, bo
 	return token, username, authenticated, created, errmsg
 }
 
-func (a *authenticator) NewSignInSession(username string) (string, error) {
+func (a *authenticator) NewSignInSession(username string, authenticated bool) (string, error) {
 	token, err := NewSessionToken()
 	if err != nil {
 		return "", err
 	}
 
-	id, err := a.database.CreateSignInSession(token, username, time.Now())
+	id, err := a.database.CreateSignInSession(token, username, authenticated, time.Now())
 	if err != nil {
 		return "", err
 	}

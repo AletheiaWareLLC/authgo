@@ -28,11 +28,9 @@ func NewTestAccount(t *testing.T, a authgo.Authenticator) *authgo.Account {
 
 func SignIn(t *testing.T, a authgo.Authenticator) (string, *authgo.Account) {
 	t.Helper()
-	token, err := a.NewSignInSession(TEST_USERNAME)
+	token, err := a.NewSignInSession(TEST_USERNAME, true)
 	assert.Nil(t, err)
 	account, err := a.AuthenticateAccount(TEST_USERNAME, []byte(TEST_PASSWORD))
-	assert.Nil(t, err)
-	err = a.SetSignInSessionAuthenticated(token, true)
 	assert.Nil(t, err)
 	return token, account
 }
