@@ -8,6 +8,7 @@ import (
 	"html/template"
 	"log"
 	"net/http"
+	"net/url"
 	"strings"
 )
 
@@ -25,18 +26,26 @@ func SignUp(a authgo.Authenticator, ts *template.Template) http.Handler {
 		}
 		token, email, username, _, errmsg := a.CurrentSignUpSession(r)
 		// log.Println("CurrentSignUpSession", token, email, username, challenge, errmsg)
+		next, err := url.QueryUnescape(strings.TrimSpace(r.FormValue("next")))
+		if err != nil {
+			log.Println(err)
+			http.Error(w, http.StatusText(http.StatusNotFound), http.StatusNotFound)
+			return
+		}
 		switch r.Method {
 		case "GET":
 			data := struct {
-				Live bool
-				Email,
-				Username,
-				Error string
+				Live     bool
+				Email    string
+				Username string
+				Error    string
+				Next     string
 			}{
 				Live:     netgo.IsLive(),
 				Email:    email,
 				Username: username,
 				Error:    errmsg,
+				Next:     next,
 			}
 			if err := ts.ExecuteTemplate(w, "sign-up.go.html", data); err != nil {
 				log.Println(err)
@@ -63,12 +72,12 @@ func SignUp(a authgo.Authenticator, ts *template.Template) http.Handler {
 			if err := signUp(a, token, email, username, password, confirmation); err != nil {
 				log.Println(err)
 				a.SetSignUpSessionError(token, err.Error())
-				redirect.SignUp(w, r)
+				redirect.SignUp(w, r, next)
 				return
 			}
 			a.SetSignUpSessionError(token, "")
 
-			redirect.SignUpVerification(w, r)
+			redirect.SignUpVerification(w, r, next)
 		}
 	})
 }
@@ -117,8 +126,14 @@ func SignUpVerification(a authgo.Authenticator, ts *template.Template) http.Hand
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		token, email, username, challenge, errmsg := a.CurrentSignUpSession(r)
 		// log.Println("CurrentSignUpSession", token, email, username, challenge, errmsg)
+		next, err := url.QueryUnescape(strings.TrimSpace(r.FormValue("next")))
+		if err != nil {
+			log.Println(err)
+			http.Error(w, http.StatusText(http.StatusNotFound), http.StatusNotFound)
+			return
+		}
 		if token == "" {
-			redirect.SignUp(w, r)
+			redirect.SignUp(w, r, next)
 			return
 		}
 		switch r.Method {
@@ -126,9 +141,11 @@ func SignUpVerification(a authgo.Authenticator, ts *template.Template) http.Hand
 			data := struct {
 				Live  bool
 				Error string
+				Next  string
 			}{
 				Live:  netgo.IsLive(),
 				Error: errmsg,
+				Next:  next,
 			}
 			if err := ts.ExecuteTemplate(w, "sign-up-verification.go.html", data); err != nil {
 				log.Println(err)
@@ -139,7 +156,7 @@ func SignUpVerification(a authgo.Authenticator, ts *template.Template) http.Hand
 
 			if err := signUpVerification(challenge, verification); err != nil {
 				a.SetSignUpSessionError(token, err.Error())
-				redirect.SignUpVerification(w, r)
+				redirect.SignUpVerification(w, r, next)
 				return
 			}
 
@@ -161,7 +178,11 @@ func SignUpVerification(a authgo.Authenticator, ts *template.Template) http.Hand
 
 			http.SetCookie(w, a.NewSignInSessionCookie(token))
 
-			redirect.Account(w, r)
+			if next == "" {
+				redirect.Account(w, r)
+			} else {
+				http.Redirect(w, r, next, http.StatusFound)
+			}
 		}
 	})
 }

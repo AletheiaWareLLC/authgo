@@ -8,6 +8,7 @@ import (
 	"html/template"
 	"log"
 	"net/http"
+	"net/url"
 	"strings"
 )
 
@@ -25,16 +26,24 @@ func AccountRecovery(a authgo.Authenticator, ts *template.Template) http.Handler
 		}
 		token, email, _, _, errmsg := a.CurrentAccountRecoverySession(r)
 		// log.Println("CurrentAccountRecoverySession", token, email, username, challenge, errmsg)
+		next, err := url.QueryUnescape(strings.TrimSpace(r.FormValue("next")))
+		if err != nil {
+			log.Println(err)
+			http.Error(w, http.StatusText(http.StatusNotFound), http.StatusNotFound)
+			return
+		}
 		switch r.Method {
 		case "GET":
 			data := struct {
-				Live bool
-				Email,
+				Live  bool
+				Email string
 				Error string
+				Next  string
 			}{
 				Live:  netgo.IsLive(),
 				Email: email,
 				Error: errmsg,
+				Next:  next,
 			}
 			if err := ts.ExecuteTemplate(w, "account-recovery.go.html", data); err != nil {
 				log.Println(err)
@@ -58,13 +67,13 @@ func AccountRecovery(a authgo.Authenticator, ts *template.Template) http.Handler
 			if err := accountRecovery(a, token, email); err != nil {
 				log.Println(err)
 				a.SetAccountRecoverySessionError(token, err.Error())
-				redirect.AccountRecovery(w, r)
+				redirect.AccountRecovery(w, r, next)
 				return
 			}
 
 			a.SetAccountRecoverySessionError(token, "")
 
-			redirect.AccountRecoveryVerification(w, r)
+			redirect.AccountRecoveryVerification(w, r, next)
 		}
 	})
 }
@@ -104,20 +113,28 @@ func AccountRecoveryVerification(a authgo.Authenticator, ts *template.Template) 
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		token, _, username, challenge, errmsg := a.CurrentAccountRecoverySession(r)
 		// log.Println("CurrentAccountRecoverySession", token, email, username, challenge, errmsg)
+		next, err := url.QueryUnescape(strings.TrimSpace(r.FormValue("next")))
+		if err != nil {
+			log.Println(err)
+			http.Error(w, http.StatusText(http.StatusNotFound), http.StatusNotFound)
+			return
+		}
 		if token == "" {
-			redirect.AccountRecovery(w, r)
+			redirect.AccountRecovery(w, r, next)
 			return
 		}
 		switch r.Method {
 		case "GET":
 			data := struct {
-				Live bool
-				Username,
-				Error string
+				Live     bool
+				Username string
+				Error    string
+				Next     string
 			}{
 				Live:     netgo.IsLive(),
 				Username: username,
 				Error:    errmsg,
+				Next:     next,
 			}
 			if err := ts.ExecuteTemplate(w, "account-recovery-verification.go.html", data); err != nil {
 				log.Println(err)
@@ -128,7 +145,7 @@ func AccountRecoveryVerification(a authgo.Authenticator, ts *template.Template) 
 
 			if err := accountRecoveryVerification(challenge, verification); err != nil {
 				a.SetAccountRecoverySessionError(token, err.Error())
-				redirect.AccountRecoveryVerification(w, r)
+				redirect.AccountRecoveryVerification(w, r, next)
 				return
 			}
 
@@ -144,7 +161,7 @@ func AccountRecoveryVerification(a authgo.Authenticator, ts *template.Template) 
 
 			http.SetCookie(w, a.NewSignInSessionCookie(token))
 
-			redirect.AccountPassword(w, r)
+			redirect.AccountPassword(w, r, next)
 		}
 	})
 }

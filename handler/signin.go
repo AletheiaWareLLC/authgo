@@ -99,6 +99,7 @@ func SignIn(a authgo.Authenticator, ts *template.Template) http.Handler {
 				if err := a.SetSignUpSessionIdentity(token, account.Email, account.Username); err != nil {
 					log.Println(err)
 					http.Error(w, http.StatusText(http.StatusNotFound), http.StatusNotFound)
+					return
 				}
 
 				http.SetCookie(w, a.NewSignUpSessionCookie(token))
@@ -117,7 +118,7 @@ func SignIn(a authgo.Authenticator, ts *template.Template) http.Handler {
 					redirect.SignIn(w, r, next)
 					return
 				}
-				redirect.SignUpVerification(w, r)
+				redirect.SignUpVerification(w, r, next)
 				return
 			}
 			if next == "" {

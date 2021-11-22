@@ -8,6 +8,7 @@ import (
 	"html/template"
 	"log"
 	"net/http"
+	"net/url"
 	"strings"
 )
 
@@ -24,14 +25,22 @@ func AccountPassword(a authgo.Authenticator, ts *template.Template) http.Handler
 		}
 		token, username, errmsg := a.CurrentAccountPasswordSession(r)
 		// log.Println("CurrentAccountPasswordSession", token, username, errmsg)
+		next, err := url.QueryUnescape(strings.TrimSpace(r.FormValue("next")))
+		if err != nil {
+			log.Println(err)
+			http.Error(w, http.StatusText(http.StatusNotFound), http.StatusNotFound)
+			return
+		}
 		switch r.Method {
 		case "GET":
 			data := struct {
 				Live  bool
 				Error string
+				Next  string
 			}{
 				Live:  netgo.IsLive(),
 				Error: errmsg,
+				Next:  next,
 			}
 			if err := ts.ExecuteTemplate(w, "account-password.go.html", data); err != nil {
 				log.Println(err)
@@ -57,12 +66,16 @@ func AccountPassword(a authgo.Authenticator, ts *template.Template) http.Handler
 			if err := accountPassword(a, username, password, confirmation); err != nil {
 				log.Println(err)
 				a.SetAccountPasswordSessionError(token, err.Error())
-				redirect.AccountPassword(w, r)
+				redirect.AccountPassword(w, r, next)
 				return
 			}
 			a.SetAccountPasswordSessionError(token, "")
 
-			redirect.Account(w, r)
+			if next == "" {
+				redirect.Account(w, r)
+			} else {
+				http.Redirect(w, r, next, http.StatusFound)
+			}
 		}
 	})
 }

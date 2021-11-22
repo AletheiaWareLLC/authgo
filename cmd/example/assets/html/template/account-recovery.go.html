@@ -25,6 +25,7 @@
             <!-- TODO(v2) add CSRF token
             <input type="hidden" id="token" name="token" value="{ { .Token } }" />
             -->
+            <input type="hidden" id="next" name="next" value="{{.Next}}" />
             <table class="center">
                 <tr>
                     <td class="leftcolumn">
@@ -42,7 +43,7 @@
                 <tr>
                     <td colspan="2" style="text-align:center;">
                         or<br />
-                        <a href="sign-in">Sign In</a>
+                        <a href="sign-in{{with .Next}}?next={{.}}{{end}}">Sign In</a>
                     </td>
                 </tr>
             </table>
