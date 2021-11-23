@@ -11,6 +11,7 @@ var (
 	ErrUsernameAlreadyRegistered = errors.New("Username Already Registered")
 	ErrEmailNotRegistered        = errors.New("Email Not Registered")
 	ErrUsernameNotRegistered     = errors.New("Username Not Registered")
+	ErrInvalidReferrer           = errors.New("Invalid Referrer")
 )
 
 type Account struct {

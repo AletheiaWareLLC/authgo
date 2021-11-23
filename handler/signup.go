@@ -24,8 +24,8 @@ func SignUp(a authgo.Authenticator, ts *template.Template) http.Handler {
 			redirect.Account(w, r)
 			return
 		}
-		token, email, username, _, errmsg := a.CurrentSignUpSession(r)
-		// log.Println("CurrentSignUpSession", token, email, username, challenge, errmsg)
+		token, email, username, referrer, _, errmsg := a.CurrentSignUpSession(r)
+		// log.Println("CurrentSignUpSession", token, email, username, referrer, challenge, errmsg)
 		next, err := url.QueryUnescape(strings.TrimSpace(r.FormValue("next")))
 		if err != nil {
 			log.Println(err)
@@ -34,16 +34,21 @@ func SignUp(a authgo.Authenticator, ts *template.Template) http.Handler {
 		}
 		switch r.Method {
 		case "GET":
+			if referrer == "" {
+				referrer = strings.TrimSpace(r.FormValue("referrer"))
+			}
 			data := struct {
 				Live     bool
 				Email    string
 				Username string
+				Referrer string
 				Error    string
 				Next     string
 			}{
 				Live:     netgo.IsLive(),
 				Email:    email,
 				Username: username,
+				Referrer: referrer,
 				Error:    errmsg,
 				Next:     next,
 			}
@@ -68,13 +73,15 @@ func SignUp(a authgo.Authenticator, ts *template.Template) http.Handler {
 			username := strings.TrimSpace(r.FormValue("username"))
 			password := []byte(strings.TrimSpace(r.FormValue("password")))
 			confirmation := []byte(strings.TrimSpace(r.FormValue("confirmation")))
+			referrer := strings.TrimSpace(r.FormValue("referrer"))
 
-			if err := signUp(a, token, email, username, password, confirmation); err != nil {
+			if err := signUp(a, token, email, username, password, confirmation, referrer); err != nil {
 				log.Println(err)
 				a.SetSignUpSessionError(token, err.Error())
 				redirect.SignUp(w, r, next)
 				return
 			}
+
 			a.SetSignUpSessionError(token, "")
 
 			redirect.SignUpVerification(w, r, next)
@@ -82,7 +89,7 @@ func SignUp(a authgo.Authenticator, ts *template.Template) http.Handler {
 	})
 }
 
-func signUp(a authgo.Authenticator, token, email, username string, password, confirmation []byte) error {
+func signUp(a authgo.Authenticator, token, email, username string, password, confirmation []byte, referrer string) error {
 	// Check valid email
 	if err := authgo.ValidateEmail(email); err != nil {
 		return err
@@ -94,6 +101,10 @@ func signUp(a authgo.Authenticator, token, email, username string, password, con
 	}
 
 	if err := a.SetSignUpSessionIdentity(token, email, username); err != nil {
+		return err
+	}
+
+	if err := a.SetSignUpSessionReferrer(token, referrer); err != nil {
 		return err
 	}
 
@@ -124,8 +135,8 @@ func signUp(a authgo.Authenticator, token, email, username string, password, con
 
 func SignUpVerification(a authgo.Authenticator, ts *template.Template) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		token, email, username, challenge, errmsg := a.CurrentSignUpSession(r)
-		// log.Println("CurrentSignUpSession", token, email, username, challenge, errmsg)
+		token, email, username, _, challenge, errmsg := a.CurrentSignUpSession(r)
+		// log.Println("CurrentSignUpSession", token, email, username, referrer, challenge, errmsg)
 		next, err := url.QueryUnescape(strings.TrimSpace(r.FormValue("next")))
 		if err != nil {
 			log.Println(err)

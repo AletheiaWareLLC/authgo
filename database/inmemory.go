@@ -31,6 +31,7 @@ func NewInMemory() *InMemory {
 		SignupEmail:       make(map[string]string),
 		SignupUsername:    make(map[string]string),
 		SignupChallenge:   make(map[string]string),
+		SignupReferrer:    make(map[string]string),
 		SignupError:       make(map[string]string),
 		SigninToken:       make(map[string]bool),
 		SigninCreated:     make(map[string]time.Time),
@@ -63,6 +64,7 @@ type InMemory struct {
 	SignupEmail       map[string]string
 	SignupUsername    map[string]string
 	SignupChallenge   map[string]string
+	SignupReferrer    map[string]string
 	SignupError       map[string]string
 	SigninToken       map[string]bool
 	SigninCreated     map[string]time.Time
@@ -156,16 +158,17 @@ func (db *InMemory) CreateSignUpSession(token string, created time.Time) (int64,
 	return 1, nil
 }
 
-func (db *InMemory) SelectSignUpSession(token string) (string, string, string, string, time.Time, error) {
+func (db *InMemory) SelectSignUpSession(token string) (string, string, string, string, string, time.Time, error) {
 	if _, ok := db.SignupToken[token]; !ok {
-		return "", "", "", "", time.Time{}, ErrNoSuchRecord
+		return "", "", "", "", "", time.Time{}, ErrNoSuchRecord
 	}
 	errmsg := db.SignupError[token]
 	email := db.SignupEmail[token]
 	username := db.SignupUsername[token]
+	referrer := db.SignupReferrer[token]
 	challenge := db.SignupChallenge[token]
 	created := db.SignupCreated[token]
-	return errmsg, email, username, challenge, created, nil
+	return errmsg, email, username, referrer, challenge, created, nil
 }
 
 func (db *InMemory) UpdateSignUpSessionError(token string, errmsg string) (int64, error) {
@@ -190,6 +193,14 @@ func (db *InMemory) UpdateSignUpSessionChallenge(token, challenge string) (int64
 		return 0, ErrNoSuchRecord
 	}
 	db.SignupChallenge[token] = challenge
+	return 1, nil
+}
+
+func (db *InMemory) UpdateSignUpSessionReferrer(token, referrer string) (int64, error) {
+	if _, ok := db.SignupToken[token]; !ok {
+		return 0, ErrNoSuchRecord
+	}
+	db.SignupReferrer[token] = referrer
 	return 1, nil
 }
 

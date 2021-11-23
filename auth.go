@@ -21,11 +21,12 @@ type Authenticator interface {
 	SignUpSessionTimeout() time.Duration
 	SetSignUpSessionTimeout(time.Duration)
 	NewSignUpSessionCookie(string) *http.Cookie
-	CurrentSignUpSession(*http.Request) (string, string, string, string, string)
+	CurrentSignUpSession(*http.Request) (string, string, string, string, string, string)
 	NewSignUpSession() (string, error)
-	LookupSignUpSession(string) (string, string, string, string, bool)
+	LookupSignUpSession(string) (string, string, string, string, string, bool)
 	SetSignUpSessionIdentity(string, string, string) error
 	SetSignUpSessionChallenge(string, string) error
+	SetSignUpSessionReferrer(string, string) error
 	SetSignUpSessionError(string, string)
 
 	SignInSessionTimeout() time.Duration
@@ -193,17 +194,17 @@ func (a *authenticator) NewSignUpSessionCookie(token string) *http.Cookie {
 	return NewCookie(COOKIE_SIGN_UP, token, a.signUpSessionTimeout)
 }
 
-func (a authenticator) CurrentSignUpSession(r *http.Request) (string, string, string, string, string) {
+func (a authenticator) CurrentSignUpSession(r *http.Request) (string, string, string, string, string, string) {
 	c, err := r.Cookie(COOKIE_SIGN_UP)
 	if err != nil {
-		return "", "", "", "", ""
+		return "", "", "", "", "", ""
 	}
 	token := c.Value
-	email, username, challenge, errmsg, ok := a.LookupSignUpSession(token)
+	email, username, referrer, challenge, errmsg, ok := a.LookupSignUpSession(token)
 	if !ok {
-		return "", "", "", "", ""
+		return "", "", "", "", "", ""
 	}
-	return token, email, username, challenge, errmsg
+	return token, email, username, referrer, challenge, errmsg
 }
 
 func (a *authenticator) NewSignUpSession() (string, error) {
@@ -221,16 +222,16 @@ func (a *authenticator) NewSignUpSession() (string, error) {
 	return token, nil
 }
 
-func (a *authenticator) LookupSignUpSession(token string) (string, string, string, string, bool) {
-	errmsg, email, username, challenge, created, err := a.database.SelectSignUpSession(token)
+func (a *authenticator) LookupSignUpSession(token string) (string, string, string, string, string, bool) {
+	errmsg, email, username, referrer, challenge, created, err := a.database.SelectSignUpSession(token)
 	if err != nil {
 		log.Println(err)
-		return "", "", "", "", false
+		return "", "", "", "", "", false
 	}
 	if created.Add(a.signUpSessionTimeout).Before(time.Now()) {
-		return "", "", "", "", false
+		return "", "", "", "", "", false
 	}
-	return email, username, challenge, errmsg, true
+	return email, username, referrer, challenge, errmsg, true
 }
 
 func (a *authenticator) SetSignUpSessionError(token string, errmsg string) {
@@ -247,6 +248,11 @@ func (a *authenticator) SetSignUpSessionIdentity(token, email, username string) 
 
 func (a *authenticator) SetSignUpSessionChallenge(token, challenge string) error {
 	_, err := a.database.UpdateSignUpSessionChallenge(token, challenge)
+	return err
+}
+
+func (a *authenticator) SetSignUpSessionReferrer(token, referrer string) error {
+	_, err := a.database.UpdateSignUpSessionReferrer(token, referrer)
 	return err
 }
 

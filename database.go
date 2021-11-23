@@ -14,10 +14,11 @@ type Database interface {
 	SetEmailVerified(string, bool) (int64, error)
 
 	CreateSignUpSession(string, time.Time) (int64, error)
-	SelectSignUpSession(string) (string, string, string, string, time.Time, error)
+	SelectSignUpSession(string) (string, string, string, string, string, time.Time, error)
 	UpdateSignUpSessionError(string, string) (int64, error)
 	UpdateSignUpSessionIdentity(string, string, string) (int64, error)
 	UpdateSignUpSessionChallenge(string, string) (int64, error)
+	UpdateSignUpSessionReferrer(string, string) (int64, error)
 
 	CreateSignInSession(string, string, bool, time.Time) (int64, error)
 	SelectSignInSession(string) (string, string, time.Time, bool, error)
