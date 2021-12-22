@@ -11,6 +11,7 @@ import (
 	nethandler "aletheiaware.com/netgo/handler"
 	"crypto/tls"
 	"embed"
+	"fmt"
 	"html/template"
 	"io/fs"
 	"log"
@@ -33,7 +34,7 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	nethandler.AttachStaticFSHandler(mux, staticFS, true)
+	nethandler.AttachStaticFSHandler(mux, staticFS, true, fmt.Sprintf("max-age=%d", 60*60*24*7)) // 1 week max-age
 
 	// Parse Templates
 	templateFS, err := fs.Sub(embeddedFS, path.Join("assets", "html", "template"))
