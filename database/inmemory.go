@@ -26,6 +26,7 @@ func NewInMemory() *InMemory {
 		AccountPassword:   make(map[string][]byte),
 		AccountVerified:   make(map[string]bool),
 		AccountCreated:    make(map[string]time.Time),
+		AccountDeleted:    make(map[string]time.Time),
 		SignupToken:       make(map[string]bool),
 		SignupCreated:     make(map[string]time.Time),
 		SignupEmail:       make(map[string]string),
@@ -59,6 +60,7 @@ type InMemory struct {
 	AccountPassword   map[string][]byte
 	AccountVerified   map[string]bool
 	AccountCreated    map[string]time.Time
+	AccountDeleted    map[string]time.Time
 	SignupToken       map[string]bool
 	SignupCreated     map[string]time.Time
 	SignupEmail       map[string]string
@@ -114,6 +116,9 @@ func (db *InMemory) SelectUser(username string) (int64, string, []byte, time.Tim
 	if !ok {
 		return 0, "", nil, time.Time{}, authgo.ErrUsernameNotRegistered
 	}
+	if _, ok := db.AccountDeleted[username]; ok {
+		return 0, "", nil, time.Time{}, authgo.ErrUsernameNotRegistered
+	}
 	email := db.AccountEmail[username]
 	password := db.AccountPassword[username]
 	created := db.AccountCreated[username]
@@ -125,6 +130,9 @@ func (db *InMemory) SelectUsernameByEmail(email string) (string, error) {
 	if !ok {
 		return "", authgo.ErrEmailNotRegistered
 	}
+	if _, ok := db.AccountDeleted[username]; ok {
+		return "", authgo.ErrEmailNotRegistered
+	}
 	return username, nil
 }
 
@@ -132,11 +140,21 @@ func (db *InMemory) ChangePassword(username string, password []byte) (int64, err
 	if _, ok := db.AccountEmail[username]; !ok {
 		return 0, authgo.ErrUsernameNotRegistered
 	}
+	if _, ok := db.AccountDeleted[username]; ok {
+		return 0, authgo.ErrUsernameNotRegistered
+	}
 	db.AccountPassword[username] = password
 	return 1, nil
 }
 
 func (db *InMemory) IsEmailVerified(email string) (bool, error) {
+	username, ok := db.AccountUsername[email]
+	if !ok {
+		return false, authgo.ErrEmailNotRegistered
+	}
+	if _, ok := db.AccountDeleted[username]; ok {
+		return false, authgo.ErrEmailNotRegistered
+	}
 	verified, ok := db.AccountVerified[email]
 	if !ok {
 		return false, authgo.ErrEmailNotRegistered
@@ -149,6 +167,21 @@ func (db *InMemory) SetEmailVerified(email string, verified bool) (int64, error)
 		return 0, authgo.ErrEmailNotRegistered
 	}
 	db.AccountVerified[email] = verified
+	return 1, nil
+}
+
+func (db *InMemory) DeactivateUser(username string, deleted time.Time) (int64, error) {
+	db.Lock()
+	defer db.Unlock()
+	if _, ok := db.AccountEmail[username]; !ok {
+		return 0, authgo.ErrUsernameNotRegistered
+	}
+	db.AccountDeleted[username] = deleted
+	for t := range db.SigninToken {
+		if db.SigninUsername[t] == username {
+			db.SigninAuth[t] = false
+		}
+	}
 	return 1, nil
 }
 

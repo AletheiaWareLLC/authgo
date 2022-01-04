@@ -9,6 +9,7 @@ type Database interface {
 	SelectUser(string) (int64, string, []byte, time.Time, error)
 	SelectUsernameByEmail(string) (string, error)
 	ChangePassword(string, []byte) (int64, error)
+	DeactivateUser(string, time.Time) (int64, error)
 
 	IsEmailVerified(string) (bool, error)
 	SetEmailVerified(string, bool) (int64, error)

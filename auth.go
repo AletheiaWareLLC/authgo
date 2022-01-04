@@ -13,6 +13,7 @@ type Authenticator interface {
 	AuthenticateAccount(string, []byte) (*Account, error)
 	LookupUsernameForEmail(string) (string, error)
 	ChangePassword(string, []byte) error
+	DeactivateAccount(*Account) error
 
 	IsEmailVerified(string) bool
 	SetEmailVerified(string, bool) error
@@ -161,6 +162,11 @@ func (a *authenticator) ChangePassword(username string, password []byte) error {
 		return err
 	}
 	_, err = a.database.ChangePassword(username, hash)
+	return err
+}
+
+func (a *authenticator) DeactivateAccount(acc *Account) error {
+	_, err := a.database.DeactivateUser(acc.Username, time.Now())
 	return err
 }
 

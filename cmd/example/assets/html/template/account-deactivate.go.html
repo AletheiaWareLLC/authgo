@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="en" xml:lang="en" xmlns="http://www.w3.org/1999/xhtml">
+    <meta charset="UTF-8"/>
+    <meta http-equiv="Content-Language" content="en"/>
+    <head>
+        <link rel="stylesheet" href="/static/styles.css"/>
+        <meta charset="utf-8">
+        <title>Example</title>
+    </head>
+    <body>
+
+        {{if not .Live -}}
+        <p class="beta">BETA</p>
+        {{- end}}
+
+        <h1>Deactivate Account</h1>
+
+        {{if ne .Error "" -}}
+        <p class="error">{{.Error}}</p>
+        {{- end}}
+
+        <p style="text-align: center;">{{.Account.Username}} are you sure you want to deactivate your account?</p>
+
+        <form action="/account-deactivate" method="post" id="account-deactivate-form">
+            <!-- TODO(v2) add CSRF token
+            <input type="hidden" id="token" name="token" value="{ { .Token } }" />
+            -->
+            <table class="center">
+                <tr>
+                    <td colspan="2" style="text-align:center;">
+                        <input type="submit" value="Deactivate Account" style="color: red;" />
+                    </td>
+                </tr>
+            </table>
+        </form>
+    </body>
+</html>

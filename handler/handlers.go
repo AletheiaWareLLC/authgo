@@ -10,6 +10,7 @@ func AttachAuthenticationHandlers(m *http.ServeMux, a authgo.Authenticator, ts *
 	AttachAccountHandler(m, a, ts)
 	AttachAccountPasswordHandler(m, a, ts)
 	AttachAccountRecoveryHandler(m, a, ts)
+	AttachAccountDeactivateHandler(m, a, ts)
 	AttachSignInHandler(m, a, ts)
 	AttachSignOutHandler(m, a, ts)
 	AttachSignUpHandler(m, a, ts)
