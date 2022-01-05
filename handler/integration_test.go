@@ -21,3 +21,11 @@ func TestSignInTokenGetsRefreshed(t *testing.T) {
 func TestSignUpSignOutSignInAccount(t *testing.T) {
 	handler.SignUpSignOutSignInAccount(t, authtest.NewAuthenticator)
 }
+
+func TestAccountDeactivateSignIn(t *testing.T) {
+	handler.AccountDeactivateSignIn(t, authtest.NewAuthenticator)
+}
+
+func TestAccountDeactivateSignUp(t *testing.T) {
+	handler.AccountDeactivateSignUp(t, authtest.NewAuthenticator)
+}
