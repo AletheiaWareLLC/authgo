@@ -97,6 +97,7 @@ func (a *authenticator) CurrentAccount(w http.ResponseWriter, r *http.Request) *
 	}
 	account, err := a.LookupAccount(username)
 	if err != nil {
+		log.Println(err)
 		return nil
 	}
 	return account
@@ -240,15 +241,13 @@ func (a *authenticator) LookupSignUpSession(token string) (string, string, strin
 	return email, username, referrer, challenge, errmsg, true
 }
 
-func (a *authenticator) SetSignUpSessionError(token string, errmsg string) {
-	_, err := a.database.UpdateSignUpSessionError(token, errmsg)
-	if err != nil {
-		log.Println(err)
-	}
-}
-
 func (a *authenticator) SetSignUpSessionIdentity(token, email, username string) error {
 	_, err := a.database.UpdateSignUpSessionIdentity(token, email, username)
+	return err
+}
+
+func (a *authenticator) SetSignUpSessionReferrer(token, referrer string) error {
+	_, err := a.database.UpdateSignUpSessionReferrer(token, referrer)
 	return err
 }
 
@@ -257,9 +256,11 @@ func (a *authenticator) SetSignUpSessionChallenge(token, challenge string) error
 	return err
 }
 
-func (a *authenticator) SetSignUpSessionReferrer(token, referrer string) error {
-	_, err := a.database.UpdateSignUpSessionReferrer(token, referrer)
-	return err
+func (a *authenticator) SetSignUpSessionError(token string, errmsg string) {
+	_, err := a.database.UpdateSignUpSessionError(token, errmsg)
+	if err != nil {
+		log.Println(err)
+	}
 }
 
 func (a *authenticator) SignInSessionTimeout() time.Duration {
@@ -314,13 +315,6 @@ func (a *authenticator) LookupSignInSession(token string) (string, bool, time.Ti
 	return username, authenticated, created, errmsg, true
 }
 
-func (a *authenticator) SetSignInSessionError(token string, errmsg string) {
-	_, err := a.database.UpdateSignInSessionError(token, errmsg)
-	if err != nil {
-		log.Println(err)
-	}
-}
-
 func (a *authenticator) SetSignInSessionUsername(token string, username string) error {
 	_, err := a.database.UpdateSignInSessionUsername(token, username)
 	return err
@@ -329,6 +323,13 @@ func (a *authenticator) SetSignInSessionUsername(token string, username string) 
 func (a *authenticator) SetSignInSessionAuthenticated(token string, authenticated bool) error {
 	_, err := a.database.UpdateSignInSessionAuthenticated(token, authenticated)
 	return err
+}
+
+func (a *authenticator) SetSignInSessionError(token string, errmsg string) {
+	_, err := a.database.UpdateSignInSessionError(token, errmsg)
+	if err != nil {
+		log.Println(err)
+	}
 }
 
 func (a *authenticator) AccountPasswordSessionTimeout() time.Duration {
@@ -383,19 +384,19 @@ func (a *authenticator) LookupAccountPasswordSession(token string) (string, stri
 	return username, errmsg, true
 }
 
-func (a *authenticator) SetAccountPasswordSessionError(token string, errmsg string) {
-	_, err := a.database.UpdateAccountPasswordSessionError(token, errmsg)
-	if err != nil {
-		log.Println(err)
-	}
-}
-
 func (a *authenticator) AccountRecoverySessionTimeout() time.Duration {
 	return a.accountRecoverySessionTimeout
 }
 
 func (a *authenticator) SetAccountRecoverySessionTimeout(timeout time.Duration) {
 	a.accountRecoverySessionTimeout = timeout
+}
+
+func (a *authenticator) SetAccountPasswordSessionError(token string, errmsg string) {
+	_, err := a.database.UpdateAccountPasswordSessionError(token, errmsg)
+	if err != nil {
+		log.Println(err)
+	}
 }
 
 func (a *authenticator) NewAccountRecoverySessionCookie(token string) *http.Cookie {

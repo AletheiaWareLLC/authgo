@@ -8,6 +8,7 @@ import (
 )
 
 const (
+	TEST_USER_ID  = int64(1)
 	TEST_EMAIL    = "alice@example.com"
 	TEST_USERNAME = "alice"
 	TEST_PASSWORD = "password1234"

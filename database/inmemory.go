@@ -31,8 +31,8 @@ func NewInMemory() *InMemory {
 		SignupCreated:     make(map[string]time.Time),
 		SignupEmail:       make(map[string]string),
 		SignupUsername:    make(map[string]string),
-		SignupChallenge:   make(map[string]string),
 		SignupReferrer:    make(map[string]string),
+		SignupChallenge:   make(map[string]string),
 		SignupError:       make(map[string]string),
 		SigninToken:       make(map[string]bool),
 		SigninCreated:     make(map[string]time.Time),
@@ -65,8 +65,8 @@ type InMemory struct {
 	SignupCreated     map[string]time.Time
 	SignupEmail       map[string]string
 	SignupUsername    map[string]string
-	SignupChallenge   map[string]string
 	SignupReferrer    map[string]string
+	SignupChallenge   map[string]string
 	SignupError       map[string]string
 	SigninToken       map[string]bool
 	SigninCreated     map[string]time.Time
@@ -221,19 +221,19 @@ func (db *InMemory) UpdateSignUpSessionIdentity(token, email, username string) (
 	return 1, nil
 }
 
-func (db *InMemory) UpdateSignUpSessionChallenge(token, challenge string) (int64, error) {
-	if _, ok := db.SignupToken[token]; !ok {
-		return 0, ErrNoSuchRecord
-	}
-	db.SignupChallenge[token] = challenge
-	return 1, nil
-}
-
 func (db *InMemory) UpdateSignUpSessionReferrer(token, referrer string) (int64, error) {
 	if _, ok := db.SignupToken[token]; !ok {
 		return 0, ErrNoSuchRecord
 	}
 	db.SignupReferrer[token] = referrer
+	return 1, nil
+}
+
+func (db *InMemory) UpdateSignUpSessionChallenge(token, challenge string) (int64, error) {
+	if _, ok := db.SignupToken[token]; !ok {
+		return 0, ErrNoSuchRecord
+	}
+	db.SignupChallenge[token] = challenge
 	return 1, nil
 }
 
