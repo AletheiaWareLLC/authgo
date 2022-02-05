@@ -12,7 +12,7 @@ import (
 )
 
 func AttachProductsHandler(m *http.ServeMux, a authgo.Authenticator, p model.ProductManager, ts *template.Template) {
-	m.Handle("/products", handler.Log(Products(a, p, ts)))
+	m.Handle("/products", handler.Log(handler.Compress(Products(a, p, ts))))
 }
 
 func Products(a authgo.Authenticator, p model.ProductManager, ts *template.Template) http.Handler {

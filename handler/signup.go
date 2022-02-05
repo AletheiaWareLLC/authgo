@@ -13,8 +13,8 @@ import (
 )
 
 func AttachSignUpHandler(m *http.ServeMux, a authgo.Authenticator, ts *template.Template) {
-	m.Handle("/sign-up", handler.Log(SignUp(a, ts)))
-	m.Handle("/sign-up-verification", handler.Log(SignUpVerification(a, ts)))
+	m.Handle("/sign-up", handler.Log(handler.Compress(SignUp(a, ts))))
+	m.Handle("/sign-up-verification", handler.Log(handler.Compress(SignUpVerification(a, ts))))
 }
 
 func SignUp(a authgo.Authenticator, ts *template.Template) http.Handler {

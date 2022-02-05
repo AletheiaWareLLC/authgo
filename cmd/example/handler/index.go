@@ -10,7 +10,7 @@ import (
 )
 
 func AttachIndexHandler(m *http.ServeMux, a authgo.Authenticator, ts *template.Template) {
-	m.Handle("/", handler.Log(Index(a, ts)))
+	m.Handle("/", handler.Log(handler.Compress(Index(a, ts))))
 }
 
 func Index(a authgo.Authenticator, ts *template.Template) http.Handler {

@@ -11,7 +11,7 @@ import (
 )
 
 func AttachSignOutHandler(m *http.ServeMux, a authgo.Authenticator, ts *template.Template) {
-	m.Handle("/sign-out", handler.Log(SignOut(a, ts)))
+	m.Handle("/sign-out", handler.Log(handler.Compress(SignOut(a, ts))))
 }
 
 func SignOut(a authgo.Authenticator, ts *template.Template) http.Handler {

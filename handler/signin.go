@@ -13,7 +13,7 @@ import (
 )
 
 func AttachSignInHandler(m *http.ServeMux, a authgo.Authenticator, ts *template.Template) {
-	m.Handle("/sign-in", handler.Log(SignIn(a, ts)))
+	m.Handle("/sign-in", handler.Log(handler.Compress(SignIn(a, ts))))
 }
 
 func SignIn(a authgo.Authenticator, ts *template.Template) http.Handler {

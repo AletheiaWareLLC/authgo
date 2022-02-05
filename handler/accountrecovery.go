@@ -13,8 +13,8 @@ import (
 )
 
 func AttachAccountRecoveryHandler(m *http.ServeMux, a authgo.Authenticator, ts *template.Template) {
-	m.Handle("/account-recovery", handler.Log(AccountRecovery(a, ts)))
-	m.Handle("/account-recovery-verification", handler.Log(AccountRecoveryVerification(a, ts)))
+	m.Handle("/account-recovery", handler.Log(handler.Compress(AccountRecovery(a, ts))))
+	m.Handle("/account-recovery-verification", handler.Log(handler.Compress(AccountRecoveryVerification(a, ts))))
 }
 
 func AccountRecovery(a authgo.Authenticator, ts *template.Template) http.Handler {

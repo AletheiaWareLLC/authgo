@@ -11,7 +11,7 @@ import (
 )
 
 func AttachAccountDeactivateHandler(m *http.ServeMux, a authgo.Authenticator, ts *template.Template) {
-	m.Handle("/account-deactivate", handler.Log(AccountDeactivate(a, ts)))
+	m.Handle("/account-deactivate", handler.Log(handler.Compress(AccountDeactivate(a, ts))))
 }
 
 func AccountDeactivate(a authgo.Authenticator, ts *template.Template) http.Handler {

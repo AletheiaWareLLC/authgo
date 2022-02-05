@@ -11,7 +11,7 @@ import (
 )
 
 func AttachAccountHandler(m *http.ServeMux, a authgo.Authenticator, ts *template.Template) {
-	m.Handle("/account", handler.Log(Account(a, ts)))
+	m.Handle("/account", handler.Log(handler.Compress(Account(a, ts))))
 }
 
 func Account(a authgo.Authenticator, ts *template.Template) http.Handler {

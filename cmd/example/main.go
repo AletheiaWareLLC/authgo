@@ -24,6 +24,14 @@ import (
 var embeddedFS embed.FS
 
 func main() {
+	// Configure Logging
+	logFile, err := netgo.SetupLogging()
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer logFile.Close()
+	log.Println("Log File:", logFile.Name())
+
 	// Create Multiplexer
 	mux := http.NewServeMux()
 
